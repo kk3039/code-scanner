@@ -1,6 +1,29 @@
-// similarity calculation code found in https://stackoverflow.com/a/36566052
+import { mostDependent } from './utils/1000-most-dependent-upon'
 
-const similarity = (s1: string, s2: string): string => {
+const reportSimilarity = 0.5;
+
+const phishingDetect = (packages: [string]): string => {
+  let result: string = '';
+  packages.forEach(packageName => {
+    let mostSimilarPackage = null;
+    let mostSimilarity = 0;
+    mostDependent.forEach(dependentName => {
+      let similarity = calcSimilarity(packageName, dependentName);
+      if (similarity > reportSimilarity && similarity > mostSimilarity) {
+        mostSimilarPackage = dependentName;
+        mostSimilarity = similarity;
+      }
+    });
+    if (mostSimilarity > 0) {
+      result += `The package ${packageName} looks similar to the popular package ${mostSimilarPackage} 
+      with ${mostSimilarity} similarity. It's possible a phishing package.\n`;
+    }
+  });
+  return result;
+}
+
+// similarity calculation code found in https://stackoverflow.com/a/36566052
+const calcSimilarity = (s1: string, s2: string): number => {
   let longer = s1;
   let shorter = s2;
   if (s1.length < s2.length) {
@@ -9,9 +32,9 @@ const similarity = (s1: string, s2: string): string => {
   }
   let longerLength = longer.length;
   if (longerLength == 0) {
-    return '1.0';
+    return 1.0;
   }
-  return ((longerLength - editDistance(longer, shorter)) / longerLength).toPrecision(3);
+  return (longerLength - editDistance(longer, shorter)) / longerLength;
 }
 
 
