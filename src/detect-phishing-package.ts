@@ -2,7 +2,7 @@ import { mostDependent } from './utils/1000-most-dependent-upon'
 
 const reportSimilarity = 0.5;
 
-const phishingDetect = (packages: [string]): string => {
+export const phishingDetect = (packages: [string]): string => {
   let result: string = '';
   packages.forEach(packageName => {
     let mostSimilarPackage = null;
