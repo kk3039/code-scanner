@@ -2,6 +2,7 @@ interface Regexes {
   [name: string]: string
 }
 
+//Below is borrowed from: https://github.com/dxa4481/truffleHog/blob/dev/scripts/searchOrg.py
 export const regexes: Regexes = {
   "Slack Token": "(xox[pboa]-[0-9]{12}-[0-9]{12}-[0-9]{12}-[a-z0-9]{32})",
   "RSA private key": "-----BEGIN RSA PRIVATE KEY-----",
