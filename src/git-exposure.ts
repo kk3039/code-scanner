@@ -6,14 +6,20 @@ import git, {
 } from "isomorphic-git";
 // import path
 import http from "isomorphic-git/http/node";
-// import diff from 'diff-lines'
 import { regexes } from "./utils/git-exposure-regex";
+import path from "path";
+import fs from "fs";
 
-const path = require("path");
+const TextDecoder = require("text-encoding").TextDecoder;
 const diff = require("diff-lines");
-const fs = require("fs");
-
+const textDecoder = new TextDecoder();
 const dir = path.join(process.cwd(), "test-clone");
+
+type MatchResult = {
+  vulnName: string;
+  matchString: string;
+  number: number;
+};
 
 const prepareCharSet = (allChar: string, set: Set<String>) => {
   for (const c of allChar) {
@@ -23,7 +29,6 @@ const prepareCharSet = (allChar: string, set: Set<String>) => {
 
 const BASE64_CHARS_set: Set<string> = new Set();
 const HEX_CHARS_set: Set<string> = new Set();
-const chunkSize = 20;
 
 const BASE64_CHARS =
   "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
@@ -33,8 +38,12 @@ prepareCharSet(BASE64_CHARS, BASE64_CHARS_set);
 prepareCharSet(HEX_CHARS, HEX_CHARS_set);
 
 // clone repo, get all commits, iterate all commits and diff every two
-const detectGitExposure = async (repoPath: string, maxDepth: number) => {
-  console.log("hello");
+export const scanGitLogs = async (
+  owner: string,
+  repoName: string,
+  maxDepth: number
+) => {
+  const repoPath = `https://github.com/${owner}/${repoName}`;
   await git.clone({ fs, http, dir, url: repoPath });
   let commits = await git.log({
     fs,
@@ -42,7 +51,8 @@ const detectGitExposure = async (repoPath: string, maxDepth: number) => {
     depth: maxDepth,
   });
   const commitList = commits.map((commit: ReadCommitResult) => commit.oid);
-  for (let i = 0; i < commitList.length - 2; i++) {
+
+  for (let i = 0; i < commitList.length - 1; i++) {
     let curCommit = commitList[i];
     let nextCommit = commitList[i + 1];
     await diffCommit(curCommit, nextCommit);
@@ -54,7 +64,7 @@ const detectGitExposure = async (repoPath: string, maxDepth: number) => {
 const diffCommit = async (currCommit: string, nextCommit: string) => {
   const currTree = TREE({ ref: currCommit });
   const nextTree = TREE({ ref: nextCommit });
-  await git.walk({ fs, trees: [currTree, nextTree], map });
+  await git.walk({ fs, dir, trees: [currTree, nextTree], map });
 };
 
 // a map function used by `git.walk` to use in the recursive comparison
@@ -63,104 +73,77 @@ const map: WalkerMap = async (
   entries: Array<WalkerEntry> | null
 ) => {
   const [curr, next] = entries as Array<WalkerEntry>;
-  if ((await curr.type()) === "blob" && (await next.type()) === "blob") {
-    const currContent = (await curr.content()) as Uint8Array;
-    const nextContent = (await next.content()) as Uint8Array;
-    diffWorker(
-      currContent.toString(),
-      nextContent.toString(),
-      await curr.oid(),
-      await next.oid()
+  if (
+    curr &&
+    next &&
+    (await curr.type()) === "blob" &&
+    (await next.type()) === "blob"
+  ) {
+    const currContent = textDecoder.decode(
+      (await curr.content()) as Uint8Array
     );
-  }
-};
+    const nextContent = textDecoder.decode(
+      (await next.content()) as Uint8Array
+    );
+    // generate ids
+    const Aoid = await curr.oid();
+    const Boid = await next.oid();
 
-// it is supposed to call `findRegex` and `findEntropy` which are two ways of searching for possible sensitive information
-const diffWorker = (
-  currContent: string,
-  nextContent: string,
-  currCommit: string,
-  nextCommit: string
-) => {
-  const contentDiff = diff(currContent, nextContent);
-  // const findRegexRes = await findRegex(contentDiff, currCommit, nextCommit);
-  // console.log(findRegexRes);
+    // determine modification type
+    let type = "equal";
+    if (Aoid !== Boid) {
+      type = "modify";
+    }
+    if (Aoid === undefined) {
+      type = "add";
+    }
+    if (Boid === undefined) {
+      type = "remove";
+    }
+    if (Aoid === undefined && Boid === undefined) {
+      console.log("Something weird happened:");
+      console.log(curr);
+      console.log(next);
+    }
+
+    const contentDiff = diff(currContent.toString(), nextContent.toString());
+    // it is supposed to call `findRegex` and `findEntropy` which are two ways of searching for possible sensitive information
+    const findRegexRes = findRegex(contentDiff);
+    printResults(findRegexRes, Aoid, Boid);
+  }
 };
 
 // find sensitive information by regex
-const findRegex = (
-  contentDiff: string,
-  currCommit: string,
-  nextCommit: string
-) => {
-  let result = "";
+const findRegex = (contentDiff: string) => {
+  var result = [];
   for (const regex in regexes) {
     const pattern = new RegExp(regexes[regex]);
     let match = pattern.exec(contentDiff);
-    while (match) {
-      result += "Possible sensitive information exposure: ${}";
+
+    if (match && match.length > 0) {
+      result.push({
+        vulnName: regex,
+        matchString: match[0],
+        number: match.length,
+      } as MatchResult);
     }
-  }
-};
-
-// following is a function used in detecting encrypted information,
-// it is commented because some error inside it block the execution
-
-// const findEntropy = async (contentDiff: string, currCommit: string, nextCommit: string) => {
-//   const base64Chunk = chunkString(contentDiff, BASE64_CHARS_set)
-//   const hexChunk = chunkString(contentDiff, HEX_CHARS_set)
-//   let possibleSensitive = ""
-//   for (const chunk of base64Chunk) {
-//     const entropy = calcShannonEntropy(chunk, BASE64_CHARS)
-//     if (entropy > 4.5) {
-//       possibleSensitive += ""
-//     }
-//   }
-// }
-
-// const calcShannonEntropy = (input: string, charString: string): number => {
-//   const charMap: Map<String, number> = new Map()
-//   let entropy: number = 0
-//   for (const char of charString) {
-//     charMap.set(char, 0)
-//   }
-//   for (const char of input) {
-//     charMap.set(char, charMap.get(char) + 1)
-//   }
-//   const lengthOfInput = input.length
-//   for (const char of charString) {
-//     const px = charMap.get(char) / lengthOfInput
-//     if (px > 0) {
-//       entropy += px
-//     }
-//   }
-//   return entropy
-// }
-
-const chunkString = (input: string, charSet: Set<string>): Array<string> => {
-  let count = 0;
-  let chunk = "";
-  let result = [];
-  for (let char of input) {
-    if (charSet.has(char)) {
-      chunk += char;
-      count++;
-    } else {
-      if (count >= chunkSize) {
-        result.push(chunk);
-      }
-      chunk = "";
-      count = 0;
-    }
-  }
-  if (count >= chunkSize) {
-    result.push(chunk);
   }
   return result;
 };
 
-detectGitExposure("https://github.com/wsghlby/vulnerability-test", 20).then(
-  () => {
-    console.log("finish");
+const printResults = (
+  resList: MatchResult[],
+  commitA: string,
+  commitB: string
+) => {
+  if (resList.length > 0) {
+    console.log(
+      `Detected sensitive information in git commits ${commitA} and ${commitB}:`
+    );
+    resList.forEach((res) => {
+      console.log(
+        `${res.vulnName}: ${res.matchString} appearances: ${res.number}`
+      );
+    });
   }
-);
+};

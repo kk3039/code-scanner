@@ -24,3 +24,21 @@ e.g.:
 `npm run start kk3039 code-scanner` will get to the root of remote repository of this project.
 `npm run start kk3039 code-scanner src` will get to the `src/` folder of remote repository of this project.
 !! Recursive reading from directories are not supported yet.
+
+## Modules
+
+### Git Log Volunerability
+
+This module scans the git log of the given repository, and compare between two consecutive commits to see
+if sensitive information has been commited.
+
+Example output:
+
+```
+Detected sensitive information in git commits [commit A] and [commit B]:
+RSA private key: -----BEGIN RSA PRIVATE KEY----- appearances: 1
+```
+
+- To debug:
+
+Go to `git-exposure.ts` and trigger the call with a hard coded repo path, then run `npm run scan-git` to run this script independently.

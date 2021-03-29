@@ -1,4 +1,5 @@
 import { parseLocalFile, parseGithubFile } from "./parse";
+import { scanGitLogs } from "./git-exposure";
 
 if (process.argv[2] == "local") {
   const filename = process.argv[3];
@@ -15,4 +16,5 @@ if (process.argv[2] == "local") {
     throw Error("Please provide owner and repository name to the github repo");
   }
   parseGithubFile(owner, repo, path);
+  scanGitLogs(owner, repo, 20);
 }
