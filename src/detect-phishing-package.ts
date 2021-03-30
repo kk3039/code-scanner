@@ -54,7 +54,7 @@ const phishingDetect = (packages: string []): string => {
     });
     if (mostSimilarity > 0) {
       result += `- The dependent package "${packageName}" looks similar to the popular package "${mostSimilarPackage}" \
-with ${mostSimilarity.toFixed(3)} similarity. It's possible a phishing package.\n`;
+with ${mostSimilarity.toFixed(3)} similarity. It's possibly a phishing package.\n`;
     }
   });
   return result;
