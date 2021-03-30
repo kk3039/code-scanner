@@ -1,8 +1,46 @@
-import { mostDependent } from './utils/1000-most-dependent-upon'
-
+import { mostDependent } from './utils/1000-most-dependent-upon';
+import git from "isomorphic-git";
+import fs from "fs";
+import http from "isomorphic-git/http/node";
+import path from "path";
 const reportSimilarity = 0.5;
 
-export const phishingDetect = (packages: [string]): string => {
+const dir = path.join(process.cwd(), "detect-phishing");
+
+export const scanPhishingPackage = async (owner: string, repoName: string,) => {
+  const repoPath = `https://github.com/${owner}/${repoName}`;
+  await git.clone({ fs, http, dir, url: repoPath });
+  const packagePath = `${dir}/package.json`;
+  console.log("Phishing package detection:")
+  if (fs.existsSync(packagePath)) {
+    fs.readFile(packagePath, 'utf8', function (err, data) {
+      if (err) {
+        console.log('error in reading `package.json`');
+        console.log(err);
+        return;
+      }
+      const obj = JSON.parse(data);
+      const dependencies = obj["dependencies"];
+      const depList: string [] = [];
+      for (const dep in dependencies) {
+        if (dependencies.hasOwnProperty(dep)) {
+          depList.push(dep);
+        }
+      }
+      const res: string = phishingDetect(depList);
+      if (res) {
+        console.log(res);
+      } else {
+        console.log('No possible phishing package found :D');
+      }
+
+    });
+  } else {
+    console.log('`package.json` not found')
+  }
+}
+
+const phishingDetect = (packages: string []): string => {
   let result: string = '';
   packages.forEach(packageName => {
     let mostSimilarPackage = null;
@@ -15,8 +53,8 @@ export const phishingDetect = (packages: [string]): string => {
       }
     });
     if (mostSimilarity > 0) {
-      result += `The package ${packageName} looks similar to the popular package ${mostSimilarPackage} 
-      with ${mostSimilarity} similarity. It's possible a phishing package.\n`;
+      result += `- The dependent package "${packageName}" looks similar to the popular package "${mostSimilarPackage}" \
+with ${mostSimilarity.toFixed(3)} similarity. It's possible a phishing package.\n`;
     }
   });
   return result;

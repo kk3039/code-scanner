@@ -1,5 +1,6 @@
 import { parseLocalFile, parseGithubFile } from "./parse";
 import { scanGitLogs } from "./git-exposure";
+import { scanPhishingPackage } from "./detect-phishing-package";
 
 if (process.argv[2] == "local") {
   const filename = process.argv[3];
@@ -17,4 +18,5 @@ if (process.argv[2] == "local") {
   }
   parseGithubFile(owner, repo, path);
   scanGitLogs(owner, repo, 20);
+  scanPhishingPackage(owner, repo);
 }

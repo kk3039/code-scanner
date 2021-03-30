@@ -1,4 +1,4 @@
-export const mostDependent = [
+export const mostDependent: string [] = [
   'lodash',
   'chalk',
   'request',
@@ -998,5 +998,5 @@ export const mostDependent = [
   'deep-assign',
   'inquirer-autocomplete-prompt',
   'xpath',
-  'fresh',
+  'fresh'
 ];
