@@ -1,4 +1,4 @@
-import { is_malicious_http_request } from '../src/detect_malicious_request'
+import { isMaliciousHttpRequest } from '../src/detect_malicious_request'
 import fs from 'fs'
 
 const sample_code_dir = './test/sample_code'
@@ -11,7 +11,7 @@ fs.readdirSync(sample_code_dir)
       test("is_malicious_request should return true", () => {
         const buf = fs.readFileSync(`${sample_code_dir}/${filename}`);
         const code = buf.toString();
-        expect(is_malicious_http_request(code)).toBeTruthy();
+        expect(isMaliciousHttpRequest(code)).toBeTruthy();
       });
     });
 })
