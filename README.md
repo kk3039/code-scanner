@@ -42,3 +42,20 @@ RSA private key: -----BEGIN RSA PRIVATE KEY----- appearances: 1
 - To debug:
 
 Go to `git-exposure.ts` and trigger the call with a hard coded repo path, then run `npm run scan-git` to run this script independently.
+
+
+### Malicious Code in Dependency Scan
+
+This module scans the dependent npm packages, and find potentially malicious code. Currently we only focus on malicious http request, for example posting sensitive data to some unknown host.
+
+Example output:
+
+```
+Malicious Network Request Scan:
+- Myjquey found potentially malicious http request
+```
+
+
+
+
+
