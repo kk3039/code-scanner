@@ -55,7 +55,13 @@ Malicious Network Request Scan:
 - Myjquey found potentially malicious http request
 ```
 
+### Phishing Package Detection
 
+This module scans all dependent npm packages and check if there is possible phishing package exist.
 
+Example output: 
 
-
+```
+Phishing package detection:
+- The dependent package "jquey" looks similar to the popular package "jquery" with 0.833 similarity. It's possibly a phishing package.
+```
