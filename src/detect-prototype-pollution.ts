@@ -2,30 +2,11 @@ import git from "isomorphic-git";
 import fs from "fs";
 import http from "isomorphic-git/http/node";
 import path from "path";
-import CFG from "ast-flow-graph";
+import  load  from "ast-flow-graph";
+import {parseLocalFile} from "./parse"
+import * as Styx from "styx";
 
 const dir = path.join(process.cwd(), "detect-prototype-pollution");
-
-function buildCFG(src: string){
-    const cfg_configs = {
-        parser:    {
-            loc:          true,
-            range:        true,
-            comment:      true,
-            tokens:       true,
-            ecmaVersion:  9,
-            sourceType:   'module',
-            ecmaFeatures: {
-                impliedStrict: true,
-                experimentalObjectRestSpread: true
-            }
-        }
-    } 
-    const cfg = new CFG( src, cfg_configs);
-    cfg.generate();
-    console.log(cfg.toString())
-    return ""
-}
 
 export const scanPrototypePollution = async (owner: string, repoName: string,) => {
     const repoPath = `https://github.com/${owner}/${repoName}`;
@@ -38,7 +19,7 @@ export const scanPrototypePollution = async (owner: string, repoName: string,) =
           console.log(err);
           return;
         }
-        const res: string = buildCFG(data);
+        const res: string = "" //to be filled in
         if (res) {
           console.log(res);
         } else {
@@ -51,6 +32,9 @@ export const scanPrototypePollution = async (owner: string, repoName: string,) =
     }
   }
   
-  const data = fs.readFileSync( "/Users/ylu/Documents/code-scanner/node_modules/ast-flow-graph/test-data/cfg-test-03.js", 'utf8' )
-    buildCFG(data);
+const ast = parseLocalFile("/Users/ylu/Documents/code-scanner/src/test/sample-code/malicious-request-obf-1.js" )
 
+
+var flowProgram = Styx.parse(ast);
+var cfg_json = Styx.exportAsJson(flowProgram);
+console.log(cfg_json)

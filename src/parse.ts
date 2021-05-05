@@ -9,6 +9,7 @@ export const parseLocalFile = (filename: string) => {
     ecmaVersion: "latest",
   });
   console.log(parseTree);
+  return parseTree
 };
 
 export const parseGithubFile = (owner: string, repo: string, path: string) => {

@@ -25,6 +25,7 @@
     "dotenv": "^9.0.1",
     "isomorphic-git": "^1.8.1",
     "nodemon": "^2.0.7",
+    "styx": "^0.2.1",
     "text-encoding": "^0.7.0"
   },
   "devDependencies": {

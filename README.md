@@ -2,9 +2,9 @@
 
 ## Authors
 
-Cong Yu
-Victoria Lu
-Xiaomeng Wang
+Cong Yu  
+Victoria Lu  
+Xiaomeng Wang  
 
 ## Development
 
@@ -65,3 +65,6 @@ Example output:
 Phishing package detection:
 - The dependent package "jquey" looks similar to the popular package "jquery" with 0.833 similarity. It's possibly a phishing package.
 ```
+### Prototype Pollution
+
+Run `npm run scan-prototype` to run this feature independently.
