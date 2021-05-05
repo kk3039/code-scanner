@@ -1,7 +1,7 @@
 import { parseLocalFile, parseGithubFile } from "./parse";
 import { scanGitLogs } from "./git-exposure";
 import { scanPhishingPackage } from "./detect-phishing-package";
-import { scanDependency } from "./detect_malicious_request";
+import { scanDependency } from "./detect-malicious-request";
 
 const detect = async (owner: string, repo: string, path: string) => {
   try {
