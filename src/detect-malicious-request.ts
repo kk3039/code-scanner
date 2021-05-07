@@ -1,6 +1,6 @@
 import * as acorn from 'acorn'
 import * as walk from 'acorn-walk'
-import { is_valid_url } from './utils/str_utils'
+import { is_valid_url } from './utils/str-utils'
 import git from "isomorphic-git";
 import fs from "fs";
 import http from "isomorphic-git/http/node";
