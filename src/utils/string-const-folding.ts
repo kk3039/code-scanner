@@ -1,6 +1,5 @@
 import * as walk from 'acorn-walk'
 import * as _ from "lodash";
-import { has } from 'lodash';
 
 const IDENTIFIER = 'Identifier'
 const LITERAL = 'Literal'
