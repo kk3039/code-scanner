@@ -8,7 +8,6 @@ dist/*
 .vscode
 .vscode/*
 coverage
-playground*
 *.output
 .env
 npm_data.json
