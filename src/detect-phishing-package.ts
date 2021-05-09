@@ -1,8 +1,8 @@
-import { mostDependent } from './utils/1000-most-dependent-upon';
 import git from "isomorphic-git";
 import fs from "fs";
 import http from "isomorphic-git/http/node";
 import path from "path";
+import { load } from "all-package-names";
 const reportSimilarity = 0.5;
 
 const dir = path.join(process.cwd(), "detect-phishing");
@@ -13,50 +13,45 @@ export const scanPhishingPackage = async (owner: string, repoName: string,) => {
   const packagePath = `${dir}/package.json`;
   console.log("Phishing package detection:")
   if (fs.existsSync(packagePath)) {
-    fs.readFile(packagePath, 'utf8', function (err, data) {
-      if (err) {
-        console.log('error in reading `package.json`');
-        console.log(err);
-        return;
+    const data = fs.readFileSync(packagePath, 'utf8')
+    const obj = JSON.parse(data);
+    const dependencies = obj["dependencies"];
+    const depList: string[] = [];
+    for (const dep in dependencies) {
+      if (dependencies.hasOwnProperty(dep)) {
+        depList.push(dep);
       }
-      const obj = JSON.parse(data);
-      const dependencies = obj["dependencies"];
-      const depList: string [] = [];
-      for (const dep in dependencies) {
-        if (dependencies.hasOwnProperty(dep)) {
-          depList.push(dep);
-        }
-      }
-      const res: string = phishingDetect(depList);
-      if (res) {
-        console.log(res);
-      } else {
-        console.log('No possible phishing package found :D');
-      }
-
-    });
+    }
+    const res: string = await phishingDetect(depList);
+    if (res) {
+      console.log(res);
+    } else {
+      console.log('No possible phishing package found :D');
+    }
   } else {
     console.log('`package.json` not found')
   }
 }
 
-const phishingDetect = (packages: string []): string => {
+const phishingDetect = async (packages: string[]): Promise<string> => {
   let result: string = '';
-  packages.forEach(packageName => {
+  const { packageNames } = await load({ maxAge: 60000 })
+  const similarityPromises = packages.map(async (packageName) => {
     let mostSimilarPackage = null;
-    let mostSimilarity = 0;
-    mostDependent.forEach(dependentName => {
+    let mostSimilarity = 0.0;
+    packageNames.forEach(dependentName => {
       let similarity = calcSimilarity(packageName, dependentName);
       if (similarity > reportSimilarity && similarity > mostSimilarity) {
         mostSimilarPackage = dependentName;
         mostSimilarity = similarity;
       }
-    });
+    })
     if (mostSimilarity > 0) {
       result += `- The dependent package "${packageName}" looks similar to the popular package "${mostSimilarPackage}" \
-with ${mostSimilarity.toFixed(3)} similarity. It's possibly a phishing package.\n`;
+with ${mostSimilarity} similarity. It's possibly a phishing package.\n`;
     }
   });
+  Promise.all(similarityPromises)
   return result;
 }
 
