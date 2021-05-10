@@ -1,82 +1,19 @@
 import * as acorn from 'acorn'
 import * as walk from 'acorn-walk'
 import { is_valid_url } from '../utils/str-utils'
+import { findsFunctionCall, get_infect_function, is_identifier } from './pass-helpers'
 type ANode = acorn.Node
-
-export function is_identifier(node: any): boolean {
-    return node.type === 'Identifier'
-  }
-
-export function get_infect_function(alias_symbols: Set<string>, infect_nodes: Set<ANode>): (node: ANode) => boolean {
-    return (node: ANode) => {
-      let is_target_id = is_identifier(node) && alias_symbols.has((node as any).name as string)
-      return infect_nodes.has(node) || is_target_id
-    }
-  }
 
 export const sendsRequestsToExternal = (ast: any) => {
   // first pass, find http and its alias
   let http_infected_nodes = new Set<ANode>()
   let http_alias_symbols = new Set<string>(['http', 'https', 'http2', 'axios'])
-  let is_infected = get_infect_function(http_alias_symbols, http_infected_nodes)
-  walk.simple(ast, {
-    Identifier(node: acorn.Node) {
-      let id = node as any
-      if (http_alias_symbols.has(id.name as string)) {
-        http_infected_nodes.add(node)
-      }
-    },
-    VariableDeclarator(node: any) {
-      let decl = node as any
-      if (decl.id.type as string === 'Identifier') {
-        if (is_infected(decl.init as ANode)) {
-          http_alias_symbols.add(decl.id.name)
-        }
-      }
-    },
-    AssignmentExpression(node: any) {
-      let expr = node as any
-      if (expr.left.type as string === 'Identifier') {
-        if (is_infected(expr.right as ANode)) {
-          http_alias_symbols.add(expr.left.name)
-        }
-      }
-    },
-    ArrayExpression(node: acorn.Node) {
-      // array expr can be infected by its elements
-      let expr = node as any
-      let elements = expr.elements as Array<ANode>
-      if (elements.some((v) => { return http_infected_nodes.has(v) })) {
-        http_infected_nodes.add(node)
-      }
-    },
-    MemberExpression(node: acorn.Node) {
-      let expr = node as any
-      let callee = expr.object
-      let member = expr.property
-      if (http_infected_nodes.has(member) || http_infected_nodes.has(callee)) {
-        http_infected_nodes.add(node)
-      }
-    },
-    ObjectExpression(node: acorn.Node) {
-      let expr = node as any
-      let fields = expr.properties as Array<ANode>
-      if (fields.some((v) => { return http_infected_nodes.has(v) })) {
-        http_infected_nodes.add(node)
-      }
-    },
-    Property(node: acorn.Node) {
-      let expr = node as any
-      if (is_infected(expr.value)) {
-        http_infected_nodes.add(node)
-      }
-    }
-  })
+  http_infected_nodes = findsFunctionCall(ast, http_alias_symbols)
 
   let func_alias_symbols = new Set<string>()
   let func_infected_nodes = new Set<ANode>(http_infected_nodes)
   let target_func = new Set<string>(['get', 'post', 'request', 'option', 'put', 'delete'])
-  is_infected = get_infect_function(func_alias_symbols, func_infected_nodes)
+  let is_infected = get_infect_function(func_alias_symbols, func_infected_nodes)
 
   function is_target_function_call(node: ANode): boolean {
     if (node === null) {
