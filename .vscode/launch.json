@@ -9,10 +9,10 @@
       "request": "launch",
       "name": "Launch Program",
       "skipFiles": ["<node_internals>/**"],
-      "program": "${workspaceFolder}/src/git-exposure.ts",
+      "program": "${workspaceFolder}/src/index.ts",
       "outFiles": ["${workspaceFolder}/**/*.js"],
       "preLaunchTask": "tsc: build - tsconfig.json",
-      "args": ["--require", "ts-node/register"]
+      "args": ["wsghlby", "vulnerability-test","--require", "ts-node/register"]
     }
   ]
 }

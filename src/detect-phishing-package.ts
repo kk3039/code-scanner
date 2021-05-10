@@ -2,10 +2,45 @@ import git from "isomorphic-git";
 import fs from "fs";
 import http from "isomorphic-git/http/node";
 import path from "path";
-import { load } from "all-package-names";
+import axios from "axios"
 const reportSimilarity = 0.5;
 
 const dir = path.join(process.cwd(), "detect-phishing");
+const npm_data_path = `${process.cwd()}/npm_data.json`
+
+const MIN_DEPENDENT_REPOS_COUNT = 200
+const MIN_STARS = 100
+const MIN_RANK = 17
+const MIN_VERION_NUMBER = 5
+
+export const getNpmData = async () => {
+  let npm_data = null
+  let str_temp = ""
+  let is_first_write = true
+  if (!fs.existsSync(npm_data_path)) {
+    fs.writeFileSync(npm_data_path, "{\"data\":[", { flag: 'a+' })
+    for (let page = 1; page < 5; page++) {
+      let pageNumber = `&page=${page}`
+      npm_data = await axios.get(`https://libraries.io/api/search?order=desc&platforms=npm&sort=rank${page != 1 ? pageNumber : ""}`)
+      npm_data.data.map((p_obj: any) => {
+        let { dependent_repos_count, forks, name, rank, stars } = p_obj
+        let temp = { dependent_repos_count, forks, name, rank, stars }
+        if (is_first_write) {
+          str_temp += JSON.stringify(temp)
+          is_first_write = false
+        }
+        else {
+          str_temp += "," + JSON.stringify(temp)
+        }
+      })
+      fs.writeFileSync(npm_data_path, str_temp, { flag: 'a+' })
+      str_temp = ""
+    }
+    fs.writeFileSync(npm_data_path, "]}", { flag: 'a+' })
+    console.log("saved!")
+  }
+}
+
 
 export const scanPhishingPackage = async (owner: string, repoName: string,) => {
   const repoPath = `https://github.com/${owner}/${repoName}`;
@@ -33,25 +68,45 @@ export const scanPhishingPackage = async (owner: string, repoName: string,) => {
   }
 }
 
+const isSuspicious = (dependent_repos_count: number, stars: number, rank: number, numberOfVersions: number) => {
+  return dependent_repos_count < MIN_DEPENDENT_REPOS_COUNT || stars < MIN_STARS || rank < MIN_RANK || numberOfVersions < MIN_VERION_NUMBER
+}
 const phishingDetect = async (packages: string[]): Promise<string> => {
   let result: string = '';
-  const { packageNames } = await load({ maxAge: 60000 })
-  const similarityPromises = packages.map(async (packageName) => {
-    let mostSimilarPackage = null;
-    let mostSimilarity = 0.0;
-    packageNames.forEach(dependentName => {
-      let similarity = calcSimilarity(packageName, dependentName);
+  let shouldTest = true;
+  if (!fs.existsSync(npm_data_path)) {
+    await getNpmData()
+  }
+  const data = fs.readFileSync(npm_data_path, 'utf8')
+  const npmPackageData = JSON.parse(data).data
+  const checkEachPackagePromises = packages.map(async (packageNameToBeChecked) => {
+    let mostSimilarPackage : string= '';
+    let mostSimilarity = 0;
+    let hasCheckedData = false;
+    const promises = npmPackageData.map(async (npmPackageDataObj: any) => {
+      let npmPackageName = npmPackageDataObj.name
+      let similarity = calcSimilarity(packageNameToBeChecked, npmPackageName);
       if (similarity > reportSimilarity && similarity > mostSimilarity) {
-        mostSimilarPackage = dependentName;
+        mostSimilarPackage = npmPackageName;
         mostSimilarity = similarity;
       }
-    })
+      if ((similarity > reportSimilarity || packageNameToBeChecked.indexOf(npmPackageName) >= 0) && !hasCheckedData) {
+        hasCheckedData = true
+        const res = await axios.get(`https://libraries.io/api/NPM/${packageNameToBeChecked}?api_key=${process.env.LIBRARIES_IO_API_KEY}`)
+        const { dependent_repos_count, stars, rank, versions } = res.data
+        if (isSuspicious(dependent_repos_count, stars, rank, versions.length)) {
+          result +=`- The dependent package "${packageNameToBeChecked}" has low usage. Dependent count: ${dependent_repos_count}, \ 
+          stars: ${stars}, scoreRank: ${rank}, number of versions: ${versions.length}}. It's possibly a phishing package.\n`;
+        }
+      }
+    });
+    await Promise.all(promises).catch((err) => console.log(err))
     if (mostSimilarity > 0) {
-      result += `- The dependent package "${packageName}" looks similar to the popular package "${mostSimilarPackage}" \
-with ${mostSimilarity} similarity. It's possibly a phishing package.\n`;
+      result += `- The dependent package "${packageNameToBeChecked}" looks similar to the popular package "${mostSimilarPackage}" \
+      with ${mostSimilarity.toFixed(3)} similarity. It's possibly a phishing package.\n`;
     }
   });
-  Promise.all(similarityPromises)
+  await Promise.all(checkEachPackagePromises).catch((err)=> console.log(err))
   return result;
 }
 

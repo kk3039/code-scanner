@@ -6,6 +6,10 @@ dist/
 dist/*
 .idea
 .vscode
+.vscode/*
 coverage
 playground*
 *.output
+.env
+npm_data.json
+detect-phishing/*
