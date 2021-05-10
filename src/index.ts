@@ -23,7 +23,6 @@ const main = async () => {
     if (!filename) {
       throw Error("Please provide a file path");
     }
-
     parseLocalFile(filename);
   } else {
     const owner = process.argv[2];

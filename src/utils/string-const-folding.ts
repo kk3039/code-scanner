@@ -40,9 +40,6 @@ export function foldConstant(ast: any) {
             if (hasConstVal(node.init)) {
                 if (isType(node.id, IDENTIFIER)) {
                     symbolTable.set(node.id.name, node.init.constVal)
-                } else if(isType(node.id, ARRAY_PATTERN)) {
-                    // TODO
-
                 }
             }
         },
@@ -62,8 +59,10 @@ export function foldConstant(ast: any) {
             for (let prop of node.properties) {
                 if (isType(prop, PROPERTY)) {
                     if (isType(prop.key, LITERAL)) {
+                        // {'a': 1, 'b': 2}, 'a' is literal
                         obj[prop.key.value] = prop.value.constVal
                     } else if (isType(prop.key, IDENTIFIER) && hasConstVal(prop.value)) {
+                        // {a: 1, b: 2}, a is Id, b is Id
                         obj[prop.key.name] = prop.value.constVal
                     }
                 } else if (isType(prop, SPREAD_ELEMENT) && hasConstVal(prop.argument)) {
@@ -83,13 +82,14 @@ export function foldConstant(ast: any) {
         },
         ArrayExpression(node: any) {
             let elements = node.elements as Array<any>
-            if (elements.every(e => hasConstVal(e))) {
-                node.constVal = elements.map(e => e.constVal)
-            }
+            // const val of array is the const val of all its elements
+            // [Node(const=1), Node(?), Node(const='a')] => [1,null,'a']
+            node.constVal = elements.map(e => hasConstVal(e) ? e.constVal : null)
         },
         CallExpression(node: any) {
             let args = node.arguments as Array<any>
             if (hasConstVal(node.callee) && args.every(e => hasConstVal(e))) {
+                // f(a) => f.apply(this, [a])
                 node.constVal = node.callee.constVal.apply(null, args.map(e => e.constVal))
             }
         },
@@ -97,15 +97,18 @@ export function foldConstant(ast: any) {
             let expr = node as any
             let callee = expr.object
             let member = expr.property
+            // computed: a['b'] not computed: a.b, diff from a[b]
             if (!node.computed && isType(member, IDENTIFIER)) {
+                // a.b => a['b']
                 member.constVal = member.name
             }
             if (hasConstVal(callee) && hasConstVal(member)) {
                 let memExpr = callee.constVal[member.constVal]
-                if (_.hasIn(callee.constVal, member.constVal)) {
-                    node.constVal = memExpr 
+                // if a has b as its prop
+                if (_.hasIn(callee.constVal, member.constVal) && memExpr) {
+                    node.constVal = callee.constVal[member.constVal] 
                 }
-                // cps transformation
+                // closure
                 if (typeof node.constVal === 'function') {
                     node.constVal = (...args: any[]) => {
                         return memExpr.apply(callee.constVal, args)

@@ -245,6 +245,7 @@ function isMaliciousHttpRequest(code: string): boolean {
     ObjectExpression(node) {
       let expr = node as any
       let fields = expr.properties as Array<ANode>
+      // if any field in the object is a possible string, then this object is marked
       if (fields.some((v) => { return str_nodes.has(v) })) {
         str_nodes.add(node)
       }
