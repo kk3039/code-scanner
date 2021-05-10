@@ -1,4 +1,4 @@
-import { isMaliciousHttpRequest } from '../src/detect_malicious_request'
+import { isMaliciousHttpRequest } from '../detect-malicious-request'
 import fs from 'fs'
 
 const sample_code_dir = './test/sample_code'

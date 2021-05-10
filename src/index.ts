@@ -1,14 +1,16 @@
 import { parseLocalFile, parseGithubFile } from "./parse";
 import { scanGitLogs } from "./git-exposure";
 import { scanPhishingPackage } from "./detect-phishing-package";
-import { scanDependency } from "./detect_malicious_request";
+import { scanDependency } from "./detect-malicious-request";
+
+require('dotenv').config()
 
 const detect = async (owner: string, repo: string, path: string) => {
   try {
     parseGithubFile(owner, repo, path);
-    await scanGitLogs(owner, repo, 20);
+    // await scanGitLogs(owner, repo, 20);
     await scanPhishingPackage(owner, repo);
-    await scanDependency(owner, repo);
+    // await scanDependency(owner, repo);
   } catch (e) {
     // Deal with the fact the chain failed
   }
@@ -35,9 +37,9 @@ const main = async () => {
 }
 
 main().then(() => {
-
-}).catch(() => {
-
+  console.log("success")
+}).catch((err) => {
+  console.log(err)
 });
 
 
