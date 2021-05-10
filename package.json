@@ -3,12 +3,14 @@
   "version": "1.0.0",
   "description": "",
   "scripts": {
+    "jest": "jest -t",
     "test": "jest --forceExit --coverage",
     "start": "ts-node src/index.ts",
     "scan-git": "ts-node src/git-exposure.ts",
     "scan-prototype": "ts-node src/detect-prototype-pollution.ts",
     "scan-phishing": "ts-node src/detect-phishing-package.ts",
     "start:watch": "nodemon --watch src --exec ts-node src/index.ts",
+    "playground": "ts-node playground.ts > playground.json",
     "build": "tsc"
   },
   "author": "",

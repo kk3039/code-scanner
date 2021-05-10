@@ -146,7 +146,6 @@ export function foldConstant(ast: any) {
             }
         }
     })
-    print(symbolTable)
-
+    return symbolTable
 }
 

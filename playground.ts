@@ -4,11 +4,10 @@ import { intersection, map } from 'lodash';
 import {foldConstant} from './src/utils/string-const-folding'
 
 const code = `
-var a = {}
-a.b = (x) => {
-    return x+1
+var f = (x) => {
+    return "a"+x
 }
-a.b(2)
+var c = f(2)
 `
 
 // eval/exec => dangerous function powerful api
@@ -18,7 +17,7 @@ a.b(2)
 
 
 const ast = acorn.parse(code, {ecmaVersion: "latest"}) as any
-foldConstant(ast)
+console.log(foldConstant(ast))
 walk.full(ast, node => {
     console.log(node)
 })
