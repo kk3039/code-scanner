@@ -1,7 +1,7 @@
 import * as acorn from 'acorn'
 import * as walk from 'acorn-walk'
 import { intersection, map } from 'lodash';
-import {foldConstant} from './src/utils/string-const-folding'
+import {foldConstant} from './src/ast-passes/string-const-folding'
 
 const code = `
 var f = (x) => {

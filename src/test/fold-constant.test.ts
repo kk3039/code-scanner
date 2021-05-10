@@ -1,5 +1,5 @@
 import * as acorn from 'acorn'
-import {foldConstant} from '../utils/string-const-folding'
+import {foldConstant} from '../ast-passes/string-const-folding'
 
 describe(`foldConstant tests`, () => {
     test("varibles should be recognized", () => {
@@ -45,16 +45,6 @@ describe(`foldConstant tests`, () => {
         const ast = acorn.parse(code, {ecmaVersion: "latest"}) as any
         const symbolTable = foldConstant(ast)
         expect(symbolTable.get("getAddress")).toBe("http://api.github.com/repos")
-    });
-    test("function should be executed", () => {
-        const code = `
-        var f = (x) => {
-            return "a"+x
-        }
-        var c = f(2)`
-        const ast = acorn.parse(code, {ecmaVersion: "latest"}) as any
-        const symbolTable = foldConstant(ast)
-        expect(symbolTable.get("c")).toBe("a2")
     });
 });
 

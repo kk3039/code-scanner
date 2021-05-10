@@ -1,0 +1,182 @@
+Map(3) {
+  'String' => [Function: String],
+  'Object' => [Function: Object],
+  'Array' => [Function: Array]
+}
+Node {
+  type: 'Literal',
+  start: 29,
+  end: 32,
+  value: 'a',
+  raw: '"a"',
+  constVal: 'a'
+}
+Node { type: 'Identifier', start: 33, end: 34, name: 'x' }
+Node {
+  type: 'BinaryExpression',
+  start: 29,
+  end: 34,
+  left: Node {
+    type: 'Literal',
+    start: 29,
+    end: 32,
+    value: 'a',
+    raw: '"a"',
+    constVal: 'a'
+  },
+  operator: '+',
+  right: Node { type: 'Identifier', start: 33, end: 34, name: 'x' }
+}
+Node {
+  type: 'ReturnStatement',
+  start: 22,
+  end: 34,
+  argument: Node {
+    type: 'BinaryExpression',
+    start: 29,
+    end: 34,
+    left: Node {
+      type: 'Literal',
+      start: 29,
+      end: 32,
+      value: 'a',
+      raw: '"a"',
+      constVal: 'a'
+    },
+    operator: '+',
+    right: Node { type: 'Identifier', start: 33, end: 34, name: 'x' }
+  }
+}
+Node {
+  type: 'BlockStatement',
+  start: 16,
+  end: 36,
+  body: [
+    Node {
+      type: 'ReturnStatement',
+      start: 22,
+      end: 34,
+      argument: [Node]
+    }
+  ]
+}
+Node {
+  type: 'ArrowFunctionExpression',
+  start: 9,
+  end: 36,
+  id: null,
+  expression: false,
+  generator: false,
+  async: false,
+  params: [ Node { type: 'Identifier', start: 10, end: 11, name: 'x' } ],
+  body: Node { type: 'BlockStatement', start: 16, end: 36, body: [ [Node] ] }
+}
+Node {
+  type: 'VariableDeclarator',
+  start: 5,
+  end: 36,
+  id: Node { type: 'Identifier', start: 5, end: 6, name: 'f' },
+  init: Node {
+    type: 'ArrowFunctionExpression',
+    start: 9,
+    end: 36,
+    id: null,
+    expression: false,
+    generator: false,
+    async: false,
+    params: [ [Node] ],
+    body: Node { type: 'BlockStatement', start: 16, end: 36, body: [Array] }
+  }
+}
+Node {
+  type: 'VariableDeclaration',
+  start: 1,
+  end: 36,
+  declarations: [
+    Node {
+      type: 'VariableDeclarator',
+      start: 5,
+      end: 36,
+      id: [Node],
+      init: [Node]
+    }
+  ],
+  kind: 'var'
+}
+Node { type: 'Identifier', start: 45, end: 46, name: 'f' }
+Node {
+  type: 'Literal',
+  start: 47,
+  end: 48,
+  value: 2,
+  raw: '2',
+  constVal: 2
+}
+Node {
+  type: 'CallExpression',
+  start: 45,
+  end: 49,
+  callee: Node { type: 'Identifier', start: 45, end: 46, name: 'f' },
+  arguments: [
+    Node {
+      type: 'Literal',
+      start: 47,
+      end: 48,
+      value: 2,
+      raw: '2',
+      constVal: 2
+    }
+  ],
+  optional: false
+}
+Node {
+  type: 'VariableDeclarator',
+  start: 41,
+  end: 49,
+  id: Node { type: 'Identifier', start: 41, end: 42, name: 'c' },
+  init: Node {
+    type: 'CallExpression',
+    start: 45,
+    end: 49,
+    callee: Node { type: 'Identifier', start: 45, end: 46, name: 'f' },
+    arguments: [ [Node] ],
+    optional: false
+  }
+}
+Node {
+  type: 'VariableDeclaration',
+  start: 37,
+  end: 49,
+  declarations: [
+    Node {
+      type: 'VariableDeclarator',
+      start: 41,
+      end: 49,
+      id: [Node],
+      init: [Node]
+    }
+  ],
+  kind: 'var'
+}
+Node {
+  type: 'Program',
+  start: 0,
+  end: 50,
+  body: [
+    Node {
+      type: 'VariableDeclaration',
+      start: 1,
+      end: 36,
+      declarations: [Array],
+      kind: 'var'
+    },
+    Node {
+      type: 'VariableDeclaration',
+      start: 37,
+      end: 49,
+      declarations: [Array],
+      kind: 'var'
+    }
+  ],
+  sourceType: 'script'
+}
