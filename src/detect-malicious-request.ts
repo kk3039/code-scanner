@@ -6,6 +6,10 @@ import fs from "fs";
 import http from "isomorphic-git/http/node";
 import path from "path";
 import * as passes from "./ast-passes/detect-data-exchange";
+import { findPowerfulFunctions } from "./ast-passes/detect-command-injection";
+import { foldConstant } from "./ast-passes/string-const-folding";
+import { markEncodedString } from "./ast-passes/detect-encoded-string";
+
 type ANode = acorn.Node
 
 const dir = path.join(process.cwd(), "scan-dependency");
@@ -71,19 +75,89 @@ export const scanDependency = async (
   })
 }
 
+const detectRisk = (code: any) => {
+  let ast = acorn.parse(code, { sourceType: "module", ecmaVersion: 2020 })
+  // console.log('about to foldConstant')
+  foldConstant(ast)
+  // console.log('about to markEncodedString')
+  markEncodedString(ast)
+  // console.log('about to findExistsDataExchange')
+  let malicious_req_call_nodes = passes.findExistsDataExchange(ast)
+  // console.log('about to findPowerfulFunctions')
+  let powerful_function_nodes = findPowerfulFunctions(ast)
+
+  // detect combination of data exchange & powerful function & encoded string
+  let found_powerful_function_node= new Set<ANode>()
+
+  malicious_req_call_nodes.forEach(req_node => {
+    let has_powerful_function = false
+    let has_encoded_string = false
+    let detect_risk = false
+    let report_string = null
+    walk.full(req_node, (node:any) => {
+      if (powerful_function_nodes.has(node)) {
+        has_powerful_function = true
+        found_powerful_function_node.add(node)
+      }
+      if (node.isEncodedString) {
+        has_encoded_string = true
+        // found_encoded_string_node.add(node)
+      }
+    })
+    if (has_encoded_string && has_powerful_function) {
+      report_string = "Found data exchange & powerful function & encoded string"
+    } else if (has_encoded_string){
+      report_string = "Found data exchange & encoded string"
+    } else if (has_powerful_function) {
+      report_string = "Found data exchange & powerful function"
+    }
+    if (report_string) {
+      console.log("==========")
+      console.log(report_string + " in:")
+      console.log(code.substring(req_node.start, req_node.end))
+    }
+  })
+  // detect powerful function & encoded string and not appear in http request
+  powerful_function_nodes.forEach(func_node => {
+    // console.log(func_node)
+    let has_encoded_string = false
+    let report_string = ""
+    if (found_powerful_function_node.has(func_node)) {
+      return
+    }
+    walk.full(func_node, (node:any) => {
+      if (node.isEncodedString) {
+        has_encoded_string = true
+      }
+    })
+    if (has_encoded_string) {
+      report_string = "Found powerful function & encoded string"
+    } else {
+      report_string = "Found powerful function"
+    }
+    if (report_string) {
+      console.log("==========")
+      console.log(report_string + " in:")
+      console.log(code.substring(func_node.start, func_node.end))
+    }
+  })
+  // console.log("==================")
+
+  // walk.full(ast, node => {
+  //   console.log(node)
+  // })
+
+  return malicious_req_call_nodes.size > 0 || powerful_function_nodes.size > 0;
+}
+
 function isMaliciousHttpRequest(code: string): boolean {
 
   /**
    * i dont think there is any elegant solution to the case of w
    * unless we interprete the program i.e. almost run the program
    */
-  let ast = acorn.parse(code, { ecmaVersion: 2020 })
 
-  let func_infected_nodes = passes.sendsRequestsToExternal(ast)
-  let str_infected_nodes = passes.checkIfContainsURL(ast)
-  let malicious_req_call = passes.ifExistsDataExchange(ast, func_infected_nodes, str_infected_nodes)
-
-  return malicious_req_call.size > 0
+  return detectRisk(code)
 }
 
 export { isMaliciousHttpRequest }

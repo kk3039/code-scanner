@@ -4,7 +4,7 @@ import { is_valid_url } from '../utils/str-utils'
 import { findsFunctionCall, get_infect_function, is_identifier } from './pass-helpers'
 type ANode = acorn.Node
 
-export const sendsRequestsToExternal = (ast: any) => {
+const sendsRequestsToExternal = (ast: any) => {
   // first pass, find http and its alias
   let http_infected_nodes = new Set<ANode>()
   let http_alias_symbols = new Set<string>(['http', 'https', 'http2', 'axios'])
@@ -68,12 +68,13 @@ export const sendsRequestsToExternal = (ast: any) => {
   return func_infected_nodes
 }
 
-export const checkIfContainsURL = (ast: any) =>{
+const checkIfContainsURL = (ast: any) =>{
   let str_alias = new Set<string>()
   let str_nodes = new Set<ANode>()
 
   let is_infected = get_infect_function(str_alias, str_nodes)
   // TODO, further detail string alias (just like http)
+
   walk.simple(ast, {
     TemplateElement(node) {
       let temp = node as any
@@ -127,15 +128,28 @@ export const checkIfContainsURL = (ast: any) =>{
   return str_nodes
 }
 
-export const ifExistsDataExchange = (ast:any, func_infected_nodes:Set<ANode>, str_nodes:Set<ANode> )=>{
+const containsUrl = (input_node: any) => {
+  // console.log(input_node)
+  let foundUrl = false
+  walk.full(input_node, (node:any) => {
+    if (is_valid_url(node.constVal)) {
+      foundUrl = true
+    }
+  })
+  return foundUrl
+}
+
+export const findExistsDataExchange = (ast:any)=>{
       // find possible calling
   let malicious_req_call = new Set<ANode>()
+  let func_infected_nodes = sendsRequestsToExternal(ast)
+
   walk.simple(ast, {
     CallExpression(node) {
       let expr = node as any
       let callee = expr.callee
       let argList = expr.arguments as Array<ANode>
-      if (func_infected_nodes.has(callee) && argList.some(arg => str_nodes.has(arg))) {
+      if (func_infected_nodes.has(callee) && argList.some(arg => containsUrl(arg))) {
         // find possible malicious request
         malicious_req_call.add(node)
       }
