@@ -128,11 +128,11 @@ const checkIfContainsURL = (ast: any) =>{
   return str_nodes
 }
 
-const containsUrl = (input_node: any) => {
+const containsUrlOrEncoded = (input_node: any) => {
   // console.log(input_node)
   let foundUrl = false
   walk.full(input_node, (node:any) => {
-    if (is_valid_url(node.constVal)) {
+    if (is_valid_url(node.constVal) || node.isEncodedString) {
       foundUrl = true
     }
   })
@@ -149,7 +149,7 @@ export const findExistsDataExchange = (ast:any)=>{
       let expr = node as any
       let callee = expr.callee
       let argList = expr.arguments as Array<ANode>
-      if (func_infected_nodes.has(callee) && argList.some(arg => containsUrl(arg))) {
+      if (func_infected_nodes.has(callee) && argList.some(arg => containsUrlOrEncoded(arg))) {
         // find possible malicious request
         malicious_req_call.add(node)
       }

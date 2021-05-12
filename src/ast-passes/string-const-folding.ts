@@ -45,7 +45,7 @@ export function foldConstant(ast: any) {
         },
         AssignmentExpression(node: any) {
             if (hasConstVal(node.right)) {
-                symbolTable.set(node.left.id, node.right.constVal)
+                symbolTable.set(node.left.name, node.right.constVal)
             }
         },
         BinaryExpression(node: any) {
@@ -106,7 +106,7 @@ export function foldConstant(ast: any) {
                 let memExpr = callee.constVal[member.constVal]
                 // if a has b as its prop
                 if (_.hasIn(callee.constVal, member.constVal) && memExpr) {
-                    node.constVal = callee.constVal[member.constVal] 
+                    node.constVal = callee.constVal[member.constVal]
                 }
                 // closure
                 if (typeof node.constVal === 'function') {

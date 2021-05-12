@@ -110,6 +110,8 @@ const detectRisk = (code: any) => {
       report_string = "Found data exchange & encoded string"
     } else if (has_powerful_function) {
       report_string = "Found data exchange & powerful function"
+    } else {
+      report_string = "Found data exchange"
     }
     if (report_string) {
       console.log("==========")
