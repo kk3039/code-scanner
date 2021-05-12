@@ -1,0 +1,394 @@
+Map(4) {
+  'String' => [Function: String],
+  'Object' => [Function: Object],
+  'Array' => [Function: Array],
+  'a' => {}
+}
+Node {
+  type: 'ObjectExpression',
+  start: 9,
+  end: 11,
+  properties: [],
+  constVal: {}
+}
+Node {
+  type: 'VariableDeclarator',
+  start: 5,
+  end: 11,
+  id: Node { type: 'Identifier', start: 5, end: 6, name: 'a' },
+  init: Node {
+    type: 'ObjectExpression',
+    start: 9,
+    end: 11,
+    properties: [],
+    constVal: {}
+  }
+}
+Node {
+  type: 'VariableDeclaration',
+  start: 1,
+  end: 11,
+  declarations: [
+    Node {
+      type: 'VariableDeclarator',
+      start: 5,
+      end: 11,
+      id: [Node],
+      init: [Node]
+    }
+  ],
+  kind: 'var'
+}
+Node {
+  type: 'Identifier',
+  start: 12,
+  end: 13,
+  name: 'a',
+  constVal: {}
+}
+Node {
+  type: 'MemberExpression',
+  start: 12,
+  end: 15,
+  object: Node {
+    type: 'Identifier',
+    start: 12,
+    end: 13,
+    name: 'a',
+    constVal: {}
+  },
+  property: Node {
+    type: 'Identifier',
+    start: 14,
+    end: 15,
+    name: 'b',
+    constVal: 'b'
+  },
+  computed: false,
+  optional: false
+}
+Node {
+  type: 'Literal',
+  start: 35,
+  end: 39,
+  value: true,
+  raw: 'true',
+  constVal: true
+}
+Node {
+  type: 'Literal',
+  start: 49,
+  end: 50,
+  value: 1,
+  raw: '1',
+  constVal: 1
+}
+Node {
+  type: 'ReturnStatement',
+  start: 42,
+  end: 50,
+  argument: Node {
+    type: 'Literal',
+    start: 49,
+    end: 50,
+    value: 1,
+    raw: '1',
+    constVal: 1
+  },
+  constVal: 1
+}
+Node {
+  type: 'BlockStatement',
+  start: 41,
+  end: 51,
+  body: [
+    Node {
+      type: 'ReturnStatement',
+      start: 42,
+      end: 50,
+      argument: [Node],
+      constVal: 1
+    }
+  ],
+  constVal: 1
+}
+Node {
+  type: 'Literal',
+  start: 69,
+  end: 70,
+  value: 2,
+  raw: '2',
+  constVal: 2
+}
+Node {
+  type: 'ReturnStatement',
+  start: 62,
+  end: 70,
+  argument: Node {
+    type: 'Literal',
+    start: 69,
+    end: 70,
+    value: 2,
+    raw: '2',
+    constVal: 2
+  },
+  constVal: 2
+}
+Node {
+  type: 'BlockStatement',
+  start: 61,
+  end: 71,
+  body: [
+    Node {
+      type: 'ReturnStatement',
+      start: 62,
+      end: 70,
+      argument: [Node],
+      constVal: 2
+    }
+  ],
+  constVal: 2
+}
+Node {
+  type: 'IfStatement',
+  start: 31,
+  end: 71,
+  test: Node {
+    type: 'Literal',
+    start: 35,
+    end: 39,
+    value: true,
+    raw: 'true',
+    constVal: true
+  },
+  consequent: Node {
+    type: 'BlockStatement',
+    start: 41,
+    end: 51,
+    body: [ [Node] ],
+    constVal: 1
+  },
+  alternate: Node {
+    type: 'BlockStatement',
+    start: 61,
+    end: 71,
+    body: [ [Node] ],
+    constVal: 2
+  }
+}
+Node {
+  type: 'BlockStatement',
+  start: 25,
+  end: 73,
+  body: [
+    Node {
+      type: 'IfStatement',
+      start: 31,
+      end: 71,
+      test: [Node],
+      consequent: [Node],
+      alternate: [Node]
+    }
+  ]
+}
+Node {
+  type: 'ArrowFunctionExpression',
+  start: 18,
+  end: 73,
+  id: null,
+  expression: false,
+  generator: false,
+  async: false,
+  params: [ Node { type: 'Identifier', start: 19, end: 20, name: 'x' } ],
+  body: Node { type: 'BlockStatement', start: 25, end: 73, body: [ [Node] ] }
+}
+Node {
+  type: 'AssignmentExpression',
+  start: 12,
+  end: 73,
+  operator: '=',
+  left: Node {
+    type: 'MemberExpression',
+    start: 12,
+    end: 15,
+    object: Node {
+      type: 'Identifier',
+      start: 12,
+      end: 13,
+      name: 'a',
+      constVal: {}
+    },
+    property: Node {
+      type: 'Identifier',
+      start: 14,
+      end: 15,
+      name: 'b',
+      constVal: 'b'
+    },
+    computed: false,
+    optional: false
+  },
+  right: Node {
+    type: 'ArrowFunctionExpression',
+    start: 18,
+    end: 73,
+    id: null,
+    expression: false,
+    generator: false,
+    async: false,
+    params: [ [Node] ],
+    body: Node { type: 'BlockStatement', start: 25, end: 73, body: [Array] }
+  }
+}
+Node {
+  type: 'ExpressionStatement',
+  start: 12,
+  end: 73,
+  expression: Node {
+    type: 'AssignmentExpression',
+    start: 12,
+    end: 73,
+    operator: '=',
+    left: Node {
+      type: 'MemberExpression',
+      start: 12,
+      end: 15,
+      object: [Node],
+      property: [Node],
+      computed: false,
+      optional: false
+    },
+    right: Node {
+      type: 'ArrowFunctionExpression',
+      start: 18,
+      end: 73,
+      id: null,
+      expression: false,
+      generator: false,
+      async: false,
+      params: [Array],
+      body: [Node]
+    }
+  }
+}
+Node {
+  type: 'Identifier',
+  start: 74,
+  end: 75,
+  name: 'a',
+  constVal: {}
+}
+Node {
+  type: 'MemberExpression',
+  start: 74,
+  end: 77,
+  object: Node {
+    type: 'Identifier',
+    start: 74,
+    end: 75,
+    name: 'a',
+    constVal: {}
+  },
+  property: Node {
+    type: 'Identifier',
+    start: 76,
+    end: 77,
+    name: 'b',
+    constVal: 'b'
+  },
+  computed: false,
+  optional: false
+}
+Node {
+  type: 'Literal',
+  start: 78,
+  end: 79,
+  value: 2,
+  raw: '2',
+  constVal: 2
+}
+Node {
+  type: 'CallExpression',
+  start: 74,
+  end: 80,
+  callee: Node {
+    type: 'MemberExpression',
+    start: 74,
+    end: 77,
+    object: Node {
+      type: 'Identifier',
+      start: 74,
+      end: 75,
+      name: 'a',
+      constVal: {}
+    },
+    property: Node {
+      type: 'Identifier',
+      start: 76,
+      end: 77,
+      name: 'b',
+      constVal: 'b'
+    },
+    computed: false,
+    optional: false
+  },
+  arguments: [
+    Node {
+      type: 'Literal',
+      start: 78,
+      end: 79,
+      value: 2,
+      raw: '2',
+      constVal: 2
+    }
+  ],
+  optional: false
+}
+Node {
+  type: 'ExpressionStatement',
+  start: 74,
+  end: 80,
+  expression: Node {
+    type: 'CallExpression',
+    start: 74,
+    end: 80,
+    callee: Node {
+      type: 'MemberExpression',
+      start: 74,
+      end: 77,
+      object: [Node],
+      property: [Node],
+      computed: false,
+      optional: false
+    },
+    arguments: [ [Node] ],
+    optional: false
+  }
+}
+Node {
+  type: 'Program',
+  start: 0,
+  end: 81,
+  body: [
+    Node {
+      type: 'VariableDeclaration',
+      start: 1,
+      end: 11,
+      declarations: [Array],
+      kind: 'var'
+    },
+    Node {
+      type: 'ExpressionStatement',
+      start: 12,
+      end: 73,
+      expression: [Node]
+    },
+    Node {
+      type: 'ExpressionStatement',
+      start: 74,
+      end: 80,
+      expression: [Node]
+    }
+  ],
+  sourceType: 'script'
+}

@@ -2,6 +2,7 @@ import { parseLocalFile, parseGithubFile } from "./parse";
 import { scanGitLogs } from "./git-exposure";
 import { scanPhishingPackage } from "./detect-phishing-package";
 import { scanDependency } from "./detect-malicious-request";
+// import { scanDependency } from "./ast-passes/detect-malicious-request";
 
 require('dotenv').config()
 
@@ -23,7 +24,6 @@ const main = async () => {
     if (!filename) {
       throw Error("Please provide a file path");
     }
-
     parseLocalFile(filename);
   } else {
     const owner = process.argv[2];

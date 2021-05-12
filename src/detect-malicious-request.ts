@@ -1,13 +1,21 @@
 import * as acorn from 'acorn'
 import * as walk from 'acorn-walk'
-import { is_valid_url } from './utils/str_utils'
+
 import git from "isomorphic-git";
 import fs from "fs";
 import http from "isomorphic-git/http/node";
 import path from "path";
+import * as passes from "./ast-passes/detect-data-exchange";
+import { findPowerfulFunctions } from "./ast-passes/detect-command-injection";
+import { foldConstant } from "./ast-passes/string-const-folding";
+import { markEncodedString } from "./ast-passes/detect-encoded-string";
+import chalk from 'chalk';
 type ANode = acorn.Node
 
 const dir = path.join(process.cwd(), "scan-dependency");
+
+//
+const pathOffset = process.cwd().length + "/scan-dependency/".length
 
 type doneType = (error: any, results: string []) => void
 
@@ -43,10 +51,10 @@ const done = (moduleName: string) => {
     results.filter(s => s.endsWith('.js')).forEach(fileDir => {
       const buf = fs.readFileSync(fileDir);
       const code = buf.toString();
-      const flag = isMaliciousHttpRequest(code);
-      if (flag) {
-        console.log(`- ${moduleName} found potentially malicious http request`);
-      }
+      const flag = isMaliciousHttpRequest(code, moduleName, fileDir.substring(pathOffset));
+      // if (flag) {
+      //   console.log(`- ${moduleName} found potentially malicious http request`);
+      // }
     })
   }
 }
@@ -59,7 +67,7 @@ export const scanDependency = async (
   await git.clone({fs, http, dir, url: repoPath});
   let exec = require('child_process').exec;
   exec('npm install --prefix scan-dependency').stderr.pipe(process.stderr);
-  console.log('Malicious Network Request Scan:');
+  console.log(chalk.bgYellowBright('Malicious Code Scan:'));
 
   const nodeModulesDir = path.join(process.cwd(), "scan-dependency/node_modules");
   fs.readdirSync(nodeModulesDir)
@@ -70,208 +78,91 @@ export const scanDependency = async (
   })
 }
 
-function isMaliciousHttpRequest(code: string): boolean {
+const detectRisk = (code: any, moduleName: string, fileDir: string) => {
+  let ast = acorn.parse(code, { sourceType: "module", ecmaVersion: 2020 })
+  // console.log('about to foldConstant')
+  foldConstant(ast)
+  // console.log('about to markEncodedString')
+  markEncodedString(ast)
+  // console.log('about to findExistsDataExchange')
+  let malicious_req_call_nodes = passes.findExistsDataExchange(ast)
+  // console.log('about to findPowerfulFunctions')
+  let powerful_function_nodes = findPowerfulFunctions(ast)
+
+  // detect combination of data exchange & powerful function & encoded string
+  let found_powerful_function_node= new Set<ANode>()
+
+  malicious_req_call_nodes.forEach(req_node => {
+    let has_powerful_function = false
+    let has_encoded_string = false
+    let detect_risk = false
+    let report_string = null
+    walk.full(req_node, (node:any) => {
+      if (powerful_function_nodes.has(node)) {
+        has_powerful_function = true
+        found_powerful_function_node.add(node)
+      }
+      if (node.isEncodedString) {
+        has_encoded_string = true
+        // found_encoded_string_node.add(node)
+      }
+    })
+    if (has_encoded_string && has_powerful_function) {
+      report_string = "Found data exchange & powerful function & encoded string"
+    } else if (has_encoded_string){
+      report_string = "Found data exchange & encoded string"
+    } else if (has_powerful_function) {
+      report_string = "Found data exchange & powerful function"
+    } else {
+      report_string = "Found data exchange"
+    }
+    if (report_string) {
+      console.log("==========")
+      console.log(report_string + ` in ${fileDir}:`)
+      console.log(code.substring(req_node.start, req_node.end))
+    }
+  })
+  // detect powerful function & encoded string and not appear in http request
+  powerful_function_nodes.forEach(func_node => {
+    // console.log(func_node)
+    let has_encoded_string = false
+    let report_string = ""
+    if (found_powerful_function_node.has(func_node)) {
+      return
+    }
+    walk.full(func_node, (node:any) => {
+      if (node.isEncodedString) {
+        has_encoded_string = true
+      }
+    })
+    if (has_encoded_string) {
+      report_string = "Found powerful function & encoded string"
+    } else {
+      report_string = "Found powerful function"
+    }
+    if (report_string) {
+      console.log("==========")
+      console.log(report_string + ` in ${fileDir}:`)
+      console.log(code.substring(func_node.start, func_node.end))
+    }
+  })
+  // console.log("==================")
+
+  // walk.full(ast, node => {
+  //   console.log(node)
+  // })
+
+  return malicious_req_call_nodes.size > 0 || powerful_function_nodes.size > 0;
+}
+
+function isMaliciousHttpRequest(code: string, moduleName: string, fileDir: string): boolean {
 
   /**
    * i dont think there is any elegant solution to the case of w
    * unless we interprete the program i.e. almost run the program
    */
-  let ast = acorn.parse(code, { ecmaVersion: 2020 })
 
-  function is_identifier(node: any): boolean {
-    return node.type === 'Identifier'
-  }
-
-  function get_infect_function(alias_symbols: Set<string>, infect_nodes: Set<ANode>): (node: ANode) => boolean {
-    return (node: ANode) => {
-      let is_target_id = is_identifier(node) && alias_symbols.has((node as any).name as string)
-      return infect_nodes.has(node) || is_target_id
-    }
-  }
-
-  // first pass, find http and its alias
-  let http_infected_nodes = new Set<ANode>()
-  let http_alias_symbols = new Set<string>(['http', 'https', 'http2', 'axios'])
-  let is_infected = get_infect_function(http_alias_symbols, http_infected_nodes)
-  walk.simple(ast, {
-    Identifier(node: acorn.Node) {
-      let id = node as any
-      if (http_alias_symbols.has(id.name as string)) {
-        http_infected_nodes.add(node)
-      }
-    },
-    VariableDeclarator(node: any) {
-      let decl = node as any
-      if (decl.id.type as string === 'Identifier') {
-        if (is_infected(decl.init as ANode)) {
-          http_alias_symbols.add(decl.id.name)
-        }
-      }
-    },
-    AssignmentExpression(node: any) {
-      let expr = node as any
-      if (expr.left.type as string === 'Identifier') {
-        if (is_infected(expr.right as ANode)) {
-          http_alias_symbols.add(expr.left.name)
-        }
-      }
-    },
-    ArrayExpression(node: acorn.Node) {
-      // array expr can be infected by its elements
-      let expr = node as any
-      let elements = expr.elements as Array<ANode>
-      if (elements.some((v) => { return http_infected_nodes.has(v) })) {
-        http_infected_nodes.add(node)
-      }
-    },
-    MemberExpression(node: acorn.Node) {
-      let expr = node as any
-      let callee = expr.object
-      let member = expr.property
-      if (http_infected_nodes.has(member) || http_infected_nodes.has(callee)) {
-        http_infected_nodes.add(node)
-      }
-    },
-    ObjectExpression(node: acorn.Node) {
-      let expr = node as any
-      let fields = expr.properties as Array<ANode>
-      if (fields.some((v) => { return http_infected_nodes.has(v) })) {
-        http_infected_nodes.add(node)
-      }
-    },
-    Property(node: acorn.Node) {
-      let expr = node as any
-      if (is_infected(expr.value)) {
-        http_infected_nodes.add(node)
-      }
-    }
-  })
-
-  let func_alias_symbols = new Set<string>()
-  let func_infected_nodes = new Set<ANode>(http_infected_nodes)
-  let target_func = new Set<string>(['get', 'post', 'request', 'option', 'put', 'delete'])
-  is_infected = get_infect_function(func_alias_symbols, func_infected_nodes)
-
-  function is_target_function_call(node: ANode): boolean {
-    if (node === null) {
-      return false;
-    } else {
-      return is_identifier(node) && target_func.has((node as any).name)
-    }
-  }
-
-  walk.simple(ast, {
-    Identifier(node: acorn.Node) {
-      let id = node as any
-      if (func_alias_symbols.has(id.name as string)) {
-        func_infected_nodes.add(node)
-      }
-    },
-    VariableDeclarator(node: any) {
-      let decl = node as any
-      if (decl.id.type as string === 'Identifier') {
-        if (is_infected(decl.init as ANode)) {
-          func_alias_symbols.add(decl.id.name)
-        }
-      }
-    },
-    AssignmentExpression(node: any) {
-      let expr = node as any
-      if (expr.left.type as string === 'Identifier') {
-        if (is_infected(expr.right as ANode)) {
-          func_alias_symbols.add(expr.left.name)
-        }
-      }
-    },
-    MemberExpression(node) {
-      let expr = node as any
-      let callee = expr.object
-      let member = expr.property
-      let is_callee_suspect_node = func_infected_nodes.has(callee) || http_infected_nodes.has(callee)
-      if (is_callee_suspect_node && is_target_function_call(member)) {
-        func_infected_nodes.add(node)
-      }
-    },
-    ArrayExpression(node) {
-      // array expr can be infected by its elements
-      let expr = node as any
-      let elements = expr.elements as Array<ANode>
-      if (elements.some((v) => { return func_infected_nodes.has(v) })) {
-        func_infected_nodes.add(node)
-      }
-    },
-  })
-
-  let str_alias = new Set<string>()
-  let str_nodes = new Set<ANode>()
-
-  is_infected = get_infect_function(str_alias, str_nodes)
-  // TODO, further detail string alias (just like http)
-  walk.simple(ast, {
-    TemplateElement(node) {
-      let temp = node as any
-      if (is_valid_url(String(temp.raw)) || is_valid_url(String(temp.cooked))) {
-        str_nodes.add(node)
-      }
-    },
-    Literal(node) {
-      let literal = node as any
-      if (is_valid_url(String(literal.value))) {
-        str_nodes.add(node)
-      }
-    },
-    Identifier(node) {
-      let id = node as any
-      if (str_alias.has(id.name as string)) {
-        str_nodes.add(node)
-      }
-    },
-    VariableDeclarator(node) {
-      let decl = node as any
-      if (decl.id.type as string === 'Identifier') {
-        if (is_infected(decl.init as ANode)) {
-          str_alias.add(decl.id.name)
-        }
-      }
-    },
-    AssignmentExpression(node) {
-      let expr = node as any
-      if (expr.left.type as string === 'Identifier') {
-        if (is_infected(expr.right as ANode)) {
-          str_alias.add(expr.left.name)
-        }
-      }
-    },
-    ObjectExpression(node) {
-      let expr = node as any
-      let fields = expr.properties as Array<ANode>
-      if (fields.some((v) => { return str_nodes.has(v) })) {
-        str_nodes.add(node)
-      }
-    },
-    Property(node) {
-      let expr = node as any
-      if (is_infected(expr.value)) {
-        str_nodes.add(node)
-      }
-    }
-  })
-
-  // find possible calling
-  let malicious_req_call = new Set<ANode>()
-  walk.simple(ast, {
-    CallExpression(node) {
-      let expr = node as any
-      let callee = expr.callee
-      let argList = expr.arguments as Array<ANode>
-      if (func_infected_nodes.has(callee) && argList.some(arg => str_nodes.has(arg))) {
-        // find possible malicious request
-        malicious_req_call.add(node)
-      }
-    }
-  })
-
-  return malicious_req_call.size > 0
+  return detectRisk(code, moduleName, fileDir)
 }
 
-export { isMaliciousHttpRequest }
+// export { isMaliciousHttpRequest }

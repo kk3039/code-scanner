@@ -1,0 +1,1 @@
+var url_part_1 = 'h' + 't' + 't' + 'p' // <--- disguised http keyword

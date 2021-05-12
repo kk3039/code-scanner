@@ -9,6 +9,7 @@ import http from "isomorphic-git/http/node";
 import { regexes } from "./utils/git-exposure-regex";
 import path from "path";
 import fs from "fs";
+import chalk from 'chalk';
 
 const TextDecoder = require("text-encoding").TextDecoder;
 const diff = require("diff-lines");
@@ -43,6 +44,7 @@ export const scanGitLogs = async (
   repoName: string,
   maxDepth: number
 ) => {
+  console.log(chalk.bgCyanBright('Git Exposure Scan:'));
   const repoPath = `https://github.com/${owner}/${repoName}`;
   await git.clone({ fs, http, dir, url: repoPath });
   let commits = await git.log({

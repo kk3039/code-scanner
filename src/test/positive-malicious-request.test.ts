@@ -1,10 +1,10 @@
 import { isMaliciousHttpRequest } from '../detect-malicious-request'
 import fs from 'fs'
 
-const sample_code_dir = './test/sample_code'
+const sample_code_dir = './src/test/sample-code'
 
 fs.readdirSync(sample_code_dir)
-  .filter(s => s.startsWith('malicious_request'))
+  .filter(s => s.startsWith('malicious-request'))
   .filter(s => fs.statSync(`${sample_code_dir}/${s}`).isFile())
   .forEach(filename => {
     describe(`[${filename}] should be detected as malicious`, () => {
