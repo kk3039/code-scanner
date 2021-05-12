@@ -9,10 +9,13 @@ import * as passes from "./ast-passes/detect-data-exchange";
 import { findPowerfulFunctions } from "./ast-passes/detect-command-injection";
 import { foldConstant } from "./ast-passes/string-const-folding";
 import { markEncodedString } from "./ast-passes/detect-encoded-string";
-
+import chalk from 'chalk';
 type ANode = acorn.Node
 
 const dir = path.join(process.cwd(), "scan-dependency");
+
+//
+const pathOffset = process.cwd().length + "/scan-dependency/".length
 
 type doneType = (error: any, results: string []) => void
 
@@ -48,10 +51,10 @@ const done = (moduleName: string) => {
     results.filter(s => s.endsWith('.js')).forEach(fileDir => {
       const buf = fs.readFileSync(fileDir);
       const code = buf.toString();
-      const flag = isMaliciousHttpRequest(code);
-      if (flag) {
-        console.log(`- ${moduleName} found potentially malicious http request`);
-      }
+      const flag = isMaliciousHttpRequest(code, moduleName, fileDir.substring(pathOffset));
+      // if (flag) {
+      //   console.log(`- ${moduleName} found potentially malicious http request`);
+      // }
     })
   }
 }
@@ -64,7 +67,7 @@ export const scanDependency = async (
   await git.clone({fs, http, dir, url: repoPath});
   let exec = require('child_process').exec;
   exec('npm install --prefix scan-dependency').stderr.pipe(process.stderr);
-  console.log('Malicious Network Request Scan:');
+  console.log(chalk.bgYellowBright('Malicious Code Scan:'));
 
   const nodeModulesDir = path.join(process.cwd(), "scan-dependency/node_modules");
   fs.readdirSync(nodeModulesDir)
@@ -75,7 +78,7 @@ export const scanDependency = async (
   })
 }
 
-const detectRisk = (code: any) => {
+const detectRisk = (code: any, moduleName: string, fileDir: string) => {
   let ast = acorn.parse(code, { sourceType: "module", ecmaVersion: 2020 })
   // console.log('about to foldConstant')
   foldConstant(ast)
@@ -115,7 +118,7 @@ const detectRisk = (code: any) => {
     }
     if (report_string) {
       console.log("==========")
-      console.log(report_string + " in:")
+      console.log(report_string + ` in ${fileDir}:`)
       console.log(code.substring(req_node.start, req_node.end))
     }
   })
@@ -139,7 +142,7 @@ const detectRisk = (code: any) => {
     }
     if (report_string) {
       console.log("==========")
-      console.log(report_string + " in:")
+      console.log(report_string + ` in ${fileDir}:`)
       console.log(code.substring(func_node.start, func_node.end))
     }
   })
@@ -152,14 +155,14 @@ const detectRisk = (code: any) => {
   return malicious_req_call_nodes.size > 0 || powerful_function_nodes.size > 0;
 }
 
-function isMaliciousHttpRequest(code: string): boolean {
+function isMaliciousHttpRequest(code: string, moduleName: string, fileDir: string): boolean {
 
   /**
    * i dont think there is any elegant solution to the case of w
    * unless we interprete the program i.e. almost run the program
    */
 
-  return detectRisk(code)
+  return detectRisk(code, moduleName, fileDir)
 }
 
-export { isMaliciousHttpRequest }
+// export { isMaliciousHttpRequest }
