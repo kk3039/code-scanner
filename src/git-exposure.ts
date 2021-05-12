@@ -37,6 +37,7 @@ const HEX_CHARS = "1234567890abcdefABCDEF";
 
 prepareCharSet(BASE64_CHARS, BASE64_CHARS_set);
 prepareCharSet(HEX_CHARS, HEX_CHARS_set);
+let foundExposure = false
 
 // clone repo, get all commits, iterate all commits and diff every two
 export const scanGitLogs = async (
@@ -60,6 +61,9 @@ export const scanGitLogs = async (
     await diffCommit(curCommit, nextCommit);
   }
   fs.rmdirSync("test-clone", { recursive: true });
+  if (!foundExposure) {
+    console.log("Not Git exposure found")
+  }
 };
 
 // TODO: try to get `Walker` of two commits for the `git.walk` to do recursive comparison
@@ -108,10 +112,15 @@ const map: WalkerMap = async (
       console.log(next);
     }
 
-    const contentDiff = diff(currContent.toString(), nextContent.toString());
-    // it is supposed to call `findRegex` and `findEntropy` which are two ways of searching for possible sensitive information
-    const findRegexRes = findRegex(contentDiff);
-    printResults(findRegexRes, Aoid, Boid);
+    if (type !== "equal") {
+      const contentDiff = diff(currContent.toString(), nextContent.toString());
+      // it is supposed to call `findRegex` and `findEntropy` which are two ways of searching for possible sensitive information
+      const findRegexRes = findRegex(contentDiff);
+      if (findRegexRes.length > 0) {
+        console.log(filepath)
+      }
+      printResults(findRegexRes, Aoid, Boid);
+    }
   }
 };
 
@@ -142,10 +151,16 @@ const printResults = (
     console.log(
       `Detected sensitive information in git commits ${commitA} and ${commitB}:`
     );
+    const matchStringSet = new Set<string>();
     resList.forEach((res) => {
-      console.log(
-        `${res.vulnName}: ${res.matchString} appearances: ${res.number}`
-      );
+      if (!matchStringSet.has(res.matchString)) {
+        foundExposure = true
+        console.log(
+          `${res.vulnName}: ${res.matchString} appearances: ${res.number}`
+        );
+        matchStringSet.add(res.matchString)
+      }
+
     });
   }
 };

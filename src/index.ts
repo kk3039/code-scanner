@@ -10,7 +10,7 @@ require('dotenv').config()
 const detect = async (owner: string, repo: string, path: string) => {
   try {
     // parseGithubFile(owner, repo, path);
-    // await scanGitLogs(owner, repo, 20);
+    await scanGitLogs(owner, repo, 20);
     await scanPhishingPackage(owner, repo);
     await scanDependency(owner, repo);
   } catch (e) {

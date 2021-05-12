@@ -38,7 +38,6 @@ export const getNpmData = async () => {
       str_temp = ""
     }
     fs.writeFileSync(npm_data_path, "]}", { flag: 'a+' })
-    // console.log("saved!")
   }
 }
 
@@ -47,7 +46,7 @@ export const scanPhishingPackage = async (owner: string, repoName: string,) => {
   const repoPath = `https://github.com/${owner}/${repoName}`;
   await git.clone({ fs, http, dir, url: repoPath });
   const packagePath = `${dir}/package.json`;
-  console.log(chalk.bgGreenBright("Phishing Package Detection:"))
+  console.log(chalk.bgGreenBright("\nPhishing Package Detection:"))
   if (fs.existsSync(packagePath)) {
     const data = fs.readFileSync(packagePath, 'utf8')
     const obj = JSON.parse(data);
@@ -62,10 +61,10 @@ export const scanPhishingPackage = async (owner: string, repoName: string,) => {
     if (res) {
       console.log(res);
     } else {
-      console.log('No possible phishing package found :D');
+      console.log('No possible phishing package found :D\n');
     }
   } else {
-    console.log('`package.json` not found')
+    console.log('`package.json` not found\n')
   }
   fs.rmdirSync("detect-phishing", { recursive: true });
 }

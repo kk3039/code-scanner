@@ -26,21 +26,21 @@ type doneType = (error: any, results: string []) => void
 const dirWalk = function(dir: string, done: doneType) {
   var results: string[] = [];
   let list = fs.readdirSync(dir)
-    var pending = list.length;
-    if (!pending) return done(null, results);
-    list.forEach(function(file) {
-      file = path.resolve(dir, file);
-      const stat = fs.statSync(file)
-      if (stat && stat.isDirectory()) {
-        dirWalk(file, function(err, res) {
-          results = results.concat(res);
-          if (!--pending) done(null, results);
-        });
-      } else {
-        results.push(file);
+  let pending = list.length;
+  if (!pending) return done(null, results);
+  list.forEach(function(file) {
+    file = path.resolve(dir, file);
+    const stat = fs.statSync(file)
+    if (stat && stat.isDirectory()) {
+      dirWalk(file, function(err, res) {
+        results = results.concat(res);
         if (!--pending) done(null, results);
-      }
-    });
+      });
+    } else {
+      results.push(file);
+      if (!--pending) done(null, results);
+    }
+  });
 };
 
 const done = (moduleName: string) => {
@@ -53,11 +53,14 @@ const done = (moduleName: string) => {
       const buf = fs.readFileSync(fileDir);
       const code = buf.toString();
       const flag = isMaliciousHttpRequest(code, moduleName, fileDir.substring(pathOffset));
-      // if (flag) {
-      //   console.log(`- ${moduleName} found potentially malicious http request`);
-      // }
     })
   }
+}
+
+function sleep(ms:number) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
 }
 
 export const scanDependency = async (
@@ -66,20 +69,29 @@ export const scanDependency = async (
 ) => {
   console.log(chalk.bgYellowBright('Malicious Code Scan:'));
   const repoPath = `https://github.com/${owner}/${repoName}`;
-  await git.clone({fs, http, dir, url: repoPath});
-  let exec = require('child_process').exec;
-  await exec('npm install --prefix scan-dependency --loglevel=error 2> /dev/null').stderr.pipe(process.stderr);
   const nodeModulesDir = path.join(process.cwd(), "scan-dependency/node_modules");
-  fs.readdirSync(nodeModulesDir)
-    .filter(s => fs.statSync(`${nodeModulesDir}/${s}`).isDirectory())
-    .forEach(moduleName => {
-      const moduleDir = path.join(process.cwd(), `scan-dependency/node_modules/${moduleName}`);
-      dirWalk(moduleDir, done(moduleName));
-  })
-  if (!foundRisk) {
-    console.log("not risk found")
+  try {
+    await git.clone({fs, http, dir, url: repoPath});
+    let exec = require('child_process').exec;
+    await exec('npm install --prefix scan-dependency --loglevel=error 2> /dev/null', (error: any, stdout: any, stderr: any) => {
+      if (error) {
+        console.log(error);
+        return
+      }
+      fs.readdirSync(nodeModulesDir)
+      .filter(s => fs.statSync(`${nodeModulesDir}/${s}`).isDirectory())
+      .forEach(moduleName => {
+        const moduleDir = path.join(process.cwd(), `scan-dependency/node_modules/${moduleName}`);
+        dirWalk(moduleDir, done(moduleName));
+      })
+      if (!foundRisk) {
+        console.log("No risk found")
+      }
+      fs.rmdirSync("scan-dependency", { recursive: true });
+     })
+  } catch (e) {
+    console.log(e)
   }
-  fs.rmdirSync("scan-dependency", { recursive: true });
 }
 
 export const detectRisk = (code: any, moduleName: string, fileDir: string) => {
@@ -88,7 +100,7 @@ export const detectRisk = (code: any, moduleName: string, fileDir: string) => {
     code = removeShebang(code)
     ast = acorn.parse(code, { sourceType: "module", ecmaVersion: 2020 })
   } catch (e) {
-    return
+    return false
   }
 
   try {
@@ -96,11 +108,8 @@ export const detectRisk = (code: any, moduleName: string, fileDir: string) => {
   } catch (e) {
   }
 
-  // console.log('about to markEncodedString')
   markEncodedString(ast)
-  // console.log('about to findExistsDataExchange')
   let malicious_req_call_nodes = passes.findExistsDataExchange(ast)
-  // console.log('about to findPowerfulFunctions')
   let powerful_function_nodes = findPowerfulFunctions(ast)
 
   // detect combination of data exchange & powerful function & encoded string
@@ -118,7 +127,6 @@ export const detectRisk = (code: any, moduleName: string, fileDir: string) => {
       }
       if (node.isEncodedString) {
         has_encoded_string = true
-        // found_encoded_string_node.add(node)
       }
     })
     if (has_encoded_string && has_powerful_function) {
@@ -142,7 +150,6 @@ export const detectRisk = (code: any, moduleName: string, fileDir: string) => {
   })
   // detect powerful function & encoded string and not appear in http request
   powerful_function_nodes.forEach(func_node => {
-    // console.log(func_node)
     let has_encoded_string = false
     let report_string = ""
     if (found_powerful_function_node.has(func_node)) {
@@ -168,9 +175,6 @@ export const detectRisk = (code: any, moduleName: string, fileDir: string) => {
       }
     }
   })
-  // walk.full(ast, node => {
-  //   console.log(node)
-  // })
 
   return malicious_req_call_nodes.size > 0 || powerful_function_nodes.size > 0;
 }
@@ -186,9 +190,7 @@ function isMaliciousHttpRequest(code: string, moduleName: string, fileDir: strin
     foundRisk = true
     return true
   } else {
-    // console.log(`Found no risk in ${moduleName}`)
     return false
   }
 }
 
-// export { isMaliciousHttpRequest }
