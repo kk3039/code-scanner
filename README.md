@@ -59,6 +59,9 @@ Malicious Code Scan:
 
 You need to manually remove the `scan-dependency` directory after scanning.
 
+Since it is hard to find a real malicious npm package, we provide the
+testing result of several examples in `test-examples-result.md`
+
 ### Phishing Package Detection
 
 This module scans all dependent npm packages and check if there is possible phishing package exist.
