@@ -9,11 +9,14 @@ import * as passes from "./ast-passes/detect-data-exchange";
 import { findPowerfulFunctions } from "./ast-passes/detect-command-injection";
 import { foldConstant } from "./ast-passes/string-const-folding";
 import { markEncodedString } from "./ast-passes/detect-encoded-string";
+import { removeShebang } from "./utils/remove-shebang";
 import chalk from 'chalk';
 type ANode = acorn.Node
 
 const dir = path.join(process.cwd(), "scan-dependency");
 
+const maxReportStringLength = 100;
+let foundRisk = false
 //
 const pathOffset = process.cwd().length + "/scan-dependency/".length
 
@@ -66,7 +69,7 @@ export const scanDependency = async (
   const repoPath = `https://github.com/${owner}/${repoName}`;
   await git.clone({fs, http, dir, url: repoPath});
   let exec = require('child_process').exec;
-  await exec('npm install --prefix scan-dependency').stderr.pipe(process.stderr);
+  await exec('npm install --prefix scan-dependency --loglevel=error 2> /dev/null').stderr.pipe(process.stderr);
   console.log(chalk.bgYellowBright('Malicious Code Scan:'));
 
   const nodeModulesDir = path.join(process.cwd(), "scan-dependency/node_modules");
@@ -76,13 +79,32 @@ export const scanDependency = async (
       const moduleDir = path.join(process.cwd(), `scan-dependency/node_modules/${moduleName}`);
       dirWalk(moduleDir, done(moduleName));
   })
-  fs.rmdirSync("scan-dependency", { recursive: true });
+  if (!foundRisk) {
+    console.log(chalk.bgRedBright("not risk found"))
+  }
+  // fs.rmdirSync("scan-dependency", { recursive: true });
 }
 
 export const detectRisk = (code: any, moduleName: string, fileDir: string) => {
-  let ast = acorn.parse(code, { sourceType: "module", ecmaVersion: 2020 })
+  let ast = null
+  try {
+    code = removeShebang(code)
+    ast = acorn.parse(code, { sourceType: "module", ecmaVersion: 2020 })
+  } catch (e) {
+    // console.log(`path: ${fileDir}`)
+    // console.log(e)
+    // console.log(code)
+    return
+  }
+
   // console.log('about to foldConstant')
-  foldConstant(ast)
+  try {
+    foldConstant(ast)
+  } catch (e) {
+    // console.log(e)
+    // return
+  }
+
   // console.log('about to markEncodedString')
   markEncodedString(ast)
   // console.log('about to findExistsDataExchange')
@@ -119,7 +141,12 @@ export const detectRisk = (code: any, moduleName: string, fileDir: string) => {
     }
     if (report_string) {
       console.log(`- ${report_string} in ${fileDir}:`)
-      console.log(code.substring(req_node.start, req_node.end))
+      const report_source = code.substring(req_node.start, req_node.end)
+      if (report_source.length > maxReportStringLength) {
+        console.log(report_source.substring(0, maxReportStringLength) + "...")
+      } else {
+        console.log(report_source.substring(0, maxReportStringLength))
+      }
     }
   })
   // detect powerful function & encoded string and not appear in http request
@@ -142,7 +169,12 @@ export const detectRisk = (code: any, moduleName: string, fileDir: string) => {
     }
     if (report_string) {
       console.log(`- ${report_string} in ${fileDir}:`)
-      console.log(code.substring(func_node.start, func_node.end))
+      const report_source = code.substring(func_node.start, func_node.end)
+      if (report_source.length > maxReportStringLength) {
+        console.log(report_source.substring(0, maxReportStringLength) + "...")
+      } else {
+        console.log(report_source.substring(0, maxReportStringLength))
+      }
     }
   })
   // console.log("==================")
@@ -161,7 +193,13 @@ function isMaliciousHttpRequest(code: string, moduleName: string, fileDir: strin
    * unless we interprete the program i.e. almost run the program
    */
 
-  return detectRisk(code, moduleName, fileDir)
+  if (detectRisk(code, moduleName, fileDir)) {
+    foundRisk = true
+    return true
+  } else {
+    // console.log(`Found no risk in ${moduleName}`)
+    return false
+  }
 }
 
 // export { isMaliciousHttpRequest }

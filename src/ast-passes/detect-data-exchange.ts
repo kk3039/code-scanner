@@ -33,7 +33,7 @@ const sendsRequestsToExternal = (ast: any) => {
     VariableDeclarator(node: any) {
       let decl = node as any
       if (decl.id.type as string === 'Identifier') {
-        if (is_infected(decl.init as ANode)) {
+        if (decl.init && is_infected(decl.init as ANode)) {
           func_alias_symbols.add(decl.id.name)
         }
       }

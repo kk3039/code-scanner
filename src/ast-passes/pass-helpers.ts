@@ -29,7 +29,8 @@ export const findsFunctionCall = (ast: any, targetFunctions: Set<string>) => {
         VariableDeclarator(node: any) {
             let decl = node as any
             if (decl.id.type as string === 'Identifier') {
-                if (is_infected(decl.init as ANode)) {
+                // console.log(decl)
+                if (decl.init && is_infected(decl.init as ANode)) {
                     targetFunctions.add(decl.id.name)
                 }
             }

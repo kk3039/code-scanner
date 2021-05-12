@@ -50,8 +50,12 @@ export function foldConstant(ast: any) {
         },
         BinaryExpression(node: any) {
             if (hasConstVal(node.left) && hasConstVal(node.right)) {
-                let result = eval(`node.left.constVal ${node.operator} node.right.constVal`)
-                node.constVal = result
+                try {
+                    let result = eval(`node.left.constVal ${node.operator} node.right.constVal`)
+                    node.constVal = result
+                } catch (e) {
+
+                }
             }
         },
         ObjectExpression(node: any) {
@@ -65,6 +69,8 @@ export function foldConstant(ast: any) {
                         // {a: 1, b: 2}, a is Id, b is Id
                         obj[prop.key.name] = prop.value.constVal
                     }
+
+
                 } else if (isType(prop, SPREAD_ELEMENT) && hasConstVal(prop.argument)) {
                     let arg = prop.argument.constVal
                     if (Array.isArray(arg)) {
@@ -90,7 +96,9 @@ export function foldConstant(ast: any) {
             let args = node.arguments as Array<any>
             if (hasConstVal(node.callee) && args.every(e => hasConstVal(e))) {
                 // f(a) => f.apply(this, [a])
+                // console.log(node.callee.constVal)
                 node.constVal = node.callee.constVal.apply(null, args.map(e => e.constVal))
+
             }
         },
         MemberExpression(node: any) {
@@ -103,13 +111,14 @@ export function foldConstant(ast: any) {
                 member.constVal = member.name
             }
             if (hasConstVal(callee) && hasConstVal(member)) {
-                let memExpr = callee.constVal[member.constVal]
                 // if a has b as its prop
-                if (_.hasIn(callee.constVal, member.constVal) && memExpr) {
+                if (_.hasIn(callee.constVal, member.constVal) && callee.constVal[member.constVal]) {
+                    let memExpr = callee.constVal[member.constVal]
                     node.constVal = callee.constVal[member.constVal]
                 }
                 // closure
                 if (typeof node.constVal === 'function') {
+                    let memExpr = callee.constVal[member.constVal]
                     node.constVal = (...args: any[]) => {
                         return memExpr.apply(callee.constVal, args)
                     }
