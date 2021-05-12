@@ -66,7 +66,7 @@ export const scanDependency = async (
   const repoPath = `https://github.com/${owner}/${repoName}`;
   await git.clone({fs, http, dir, url: repoPath});
   let exec = require('child_process').exec;
-  exec('npm install --prefix scan-dependency').stderr.pipe(process.stderr);
+  await exec('npm install --prefix scan-dependency').stderr.pipe(process.stderr);
   console.log(chalk.bgYellowBright('Malicious Code Scan:'));
 
   const nodeModulesDir = path.join(process.cwd(), "scan-dependency/node_modules");
@@ -76,9 +76,10 @@ export const scanDependency = async (
       const moduleDir = path.join(process.cwd(), `scan-dependency/node_modules/${moduleName}`);
       dirWalk(moduleDir, done(moduleName));
   })
+  fs.rmdirSync("scan-dependency", { recursive: true });
 }
 
-const detectRisk = (code: any, moduleName: string, fileDir: string) => {
+export const detectRisk = (code: any, moduleName: string, fileDir: string) => {
   let ast = acorn.parse(code, { sourceType: "module", ecmaVersion: 2020 })
   // console.log('about to foldConstant')
   foldConstant(ast)
@@ -117,8 +118,7 @@ const detectRisk = (code: any, moduleName: string, fileDir: string) => {
       report_string = "Found data exchange"
     }
     if (report_string) {
-      console.log("==========")
-      console.log(report_string + ` in ${fileDir}:`)
+      console.log(`- ${report_string} in ${fileDir}:`)
       console.log(code.substring(req_node.start, req_node.end))
     }
   })
@@ -141,8 +141,7 @@ const detectRisk = (code: any, moduleName: string, fileDir: string) => {
       report_string = "Found powerful function"
     }
     if (report_string) {
-      console.log("==========")
-      console.log(report_string + ` in ${fileDir}:`)
+      console.log(`- ${report_string} in ${fileDir}:`)
       console.log(code.substring(func_node.start, func_node.end))
     }
   })

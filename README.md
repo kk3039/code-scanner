@@ -6,35 +6,34 @@ Cong Yu
 Victoria Lu  
 Xiaomeng Wang  
 
+## Prerequisites
+
+
 ## Development
 
-To start locally: `npm run start local [input_file_path]`
-args:
-`local`: indicate that the following is a local file
-`input_file_path`: path to file which is to be analyzed. It cannot be a directory
-e.g.: `npm run start local test.txt` will start analyze the `./test.txt` file.
+To read from a github repository: `npm run start [owner] [repo]`
 
-To read from a github repository: `npm run start [owner] [repo] [path]`
 args:
+
 `owner`: owner of the repository
 `repo`: repository name
-`path`: optional. Relative path from the root of the repository
 
 e.g.:
-`npm run start kk3039 code-scanner` will get to the root of remote repository of this project.
-`npm run start kk3039 code-scanner src` will get to the `src/` folder of remote repository of this project.
+`npm run start  wsghlby vulnerability-test` will get to the root of remote repository of this project.
 !! Recursive reading from directories are not supported yet.
 
 ## Modules
 
-### Git Log Volunerability
+### Git Log Vulnerability
 
-This module scans the git log of the given repository, and compare between two consecutive commits to see
-if sensitive information has been commited.
+This module scans the git log of the given repository, and compare 
+between two consecutive commits to see if sensitive information 
+has been committed.
 
 Example output:
 
 ```
+Git Exposure Scan:
 Detected sensitive information in git commits [commit A] and [commit B]:
 RSA private key: -----BEGIN RSA PRIVATE KEY----- appearances: 1
 ```
@@ -46,14 +45,19 @@ Go to `git-exposure.ts` and trigger the call with a hard coded repo path, then r
 
 ### Malicious Code in Dependency Scan
 
-This module scans the dependent npm packages, and find potentially malicious code. Currently we only focus on malicious http request, for example posting sensitive data to some unknown host.
+This module scans the dependent npm packages, and find potentially 
+malicious code. Currently, we only focus on data exchange, powerful
+function and encoded string.
 
 Example output:
 
 ```
-Malicious Network Request Scan:
-- Myjquey found potentially malicious http request
+Malicious Code Scan:
+- Found data exchange & powerful function & encoded string in [file path]:
+[source code]
 ```
+
+You need to manually remove the `scan-dependency` directory after scanning.
 
 ### Phishing Package Detection
 
@@ -65,6 +69,3 @@ Example output:
 Phishing package detection:
 - The dependent package "jquey" looks similar to the popular package "jquery" with 0.833 similarity. It's possibly a phishing package.
 ```
-### Prototype Pollution
-
-Run `npm run scan-prototype` to run this feature independently.

@@ -3,7 +3,7 @@ import * as walk from 'acorn-walk'
 import { intersection, map } from 'lodash';
 import {foldConstant} from './src/ast-passes/string-const-folding'
 // import {findEncodedString} from "./src/ast-passes/detect-encoded-string";
-import { isMaliciousHttpRequest} from "./src/detect-malicious-request";
+import { detectRisk } from "./src/detect-malicious-request";
 // const code = `
 // var f = (x) => {
 //     return "a"+x
@@ -64,7 +64,7 @@ const ast = acorn.parse(code, {sourceType: "module", ecmaVersion: "latest"}) as 
 //     console.log(node)
 // })
 
-isMaliciousHttpRequest(code)
+detectRisk(code, "", "")
 
 // console.log(Buffer.from("SGVsbG8gV29ybGQ=").toString('base64'))
 // console.log(Buffer.from("SGVsbG8gV29ybGQ=", 'base64'))

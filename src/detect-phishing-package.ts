@@ -3,6 +3,7 @@ import fs from "fs";
 import http from "isomorphic-git/http/node";
 import path from "path";
 import axios from "axios"
+import chalk from "chalk"
 const reportSimilarity = 0.5;
 
 const dir = path.join(process.cwd(), "detect-phishing");
@@ -37,7 +38,7 @@ export const getNpmData = async () => {
       str_temp = ""
     }
     fs.writeFileSync(npm_data_path, "]}", { flag: 'a+' })
-    console.log("saved!")
+    // console.log("saved!")
   }
 }
 
@@ -46,7 +47,7 @@ export const scanPhishingPackage = async (owner: string, repoName: string,) => {
   const repoPath = `https://github.com/${owner}/${repoName}`;
   await git.clone({ fs, http, dir, url: repoPath });
   const packagePath = `${dir}/package.json`;
-  console.log("Phishing package detection:")
+  console.log(chalk.bgGreenBright("Phishing package detection:"))
   if (fs.existsSync(packagePath)) {
     const data = fs.readFileSync(packagePath, 'utf8')
     const obj = JSON.parse(data);
@@ -66,6 +67,7 @@ export const scanPhishingPackage = async (owner: string, repoName: string,) => {
   } else {
     console.log('`package.json` not found')
   }
+  fs.rmdirSync("detect-phishing", { recursive: true });
 }
 
 const isSuspicious = (dependent_repos_count: number, stars: number, rank: number, numberOfVersions: number) => {
