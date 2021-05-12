@@ -10,6 +10,7 @@ import { findPowerfulFunctions } from "./ast-passes/detect-command-injection";
 import { foldConstant } from "./ast-passes/string-const-folding";
 import { markEncodedString } from "./ast-passes/detect-encoded-string";
 import { removeShebang } from "./utils/remove-shebang";
+import { calLineNumber } from "./utils/cal-line-number";
 import chalk from 'chalk';
 type ANode = acorn.Node
 
@@ -24,31 +25,28 @@ type doneType = (error: any, results: string []) => void
 
 const dirWalk = function(dir: string, done: doneType) {
   var results: string[] = [];
-  fs.readdir(dir, function(err: any, list) {
-    if (err) return done(err, []);
+  let list = fs.readdirSync(dir)
     var pending = list.length;
     if (!pending) return done(null, results);
     list.forEach(function(file) {
       file = path.resolve(dir, file);
-      fs.stat(file, function(err, stat) {
-        if (stat && stat.isDirectory()) {
-          dirWalk(file, function(err, res) {
-            results = results.concat(res);
-            if (!--pending) done(null, results);
-          });
-        } else {
-          results.push(file);
+      const stat = fs.statSync(file)
+      if (stat && stat.isDirectory()) {
+        dirWalk(file, function(err, res) {
+          results = results.concat(res);
           if (!--pending) done(null, results);
-        }
-      });
+        });
+      } else {
+        results.push(file);
+        if (!--pending) done(null, results);
+      }
     });
-  });
 };
 
 const done = (moduleName: string) => {
   return  (error: any, results: string []) => {
     if (error) {
-      console.log(error);
+      // console.log(error);
       return;
     }
     results.filter(s => s.endsWith('.js')).forEach(fileDir => {
@@ -66,12 +64,11 @@ export const scanDependency = async (
   owner: string,
   repoName: string
 ) => {
+  console.log(chalk.bgYellowBright('Malicious Code Scan:'));
   const repoPath = `https://github.com/${owner}/${repoName}`;
   await git.clone({fs, http, dir, url: repoPath});
   let exec = require('child_process').exec;
   await exec('npm install --prefix scan-dependency --loglevel=error 2> /dev/null').stderr.pipe(process.stderr);
-  console.log(chalk.bgYellowBright('Malicious Code Scan:'));
-
   const nodeModulesDir = path.join(process.cwd(), "scan-dependency/node_modules");
   fs.readdirSync(nodeModulesDir)
     .filter(s => fs.statSync(`${nodeModulesDir}/${s}`).isDirectory())
@@ -80,9 +77,9 @@ export const scanDependency = async (
       dirWalk(moduleDir, done(moduleName));
   })
   if (!foundRisk) {
-    console.log(chalk.bgRedBright("not risk found"))
+    console.log("not risk found")
   }
-  // fs.rmdirSync("scan-dependency", { recursive: true });
+  fs.rmdirSync("scan-dependency", { recursive: true });
 }
 
 export const detectRisk = (code: any, moduleName: string, fileDir: string) => {
@@ -91,18 +88,12 @@ export const detectRisk = (code: any, moduleName: string, fileDir: string) => {
     code = removeShebang(code)
     ast = acorn.parse(code, { sourceType: "module", ecmaVersion: 2020 })
   } catch (e) {
-    // console.log(`path: ${fileDir}`)
-    // console.log(e)
-    // console.log(code)
     return
   }
 
-  // console.log('about to foldConstant')
   try {
     foldConstant(ast)
   } catch (e) {
-    // console.log(e)
-    // return
   }
 
   // console.log('about to markEncodedString')
@@ -140,7 +131,7 @@ export const detectRisk = (code: any, moduleName: string, fileDir: string) => {
       report_string = "Found data exchange"
     }
     if (report_string) {
-      console.log(`- ${report_string} in ${fileDir}:`)
+      console.log(`- ${report_string} in ${fileDir} line ${calLineNumber(code, req_node.start)}::`)
       const report_source = code.substring(req_node.start, req_node.end)
       if (report_source.length > maxReportStringLength) {
         console.log(report_source.substring(0, maxReportStringLength) + "...")
@@ -168,7 +159,7 @@ export const detectRisk = (code: any, moduleName: string, fileDir: string) => {
       report_string = "Found powerful function"
     }
     if (report_string) {
-      console.log(`- ${report_string} in ${fileDir}:`)
+      console.log(`- ${report_string} in ${fileDir} line ${calLineNumber(code, func_node.start)}:`)
       const report_source = code.substring(func_node.start, func_node.end)
       if (report_source.length > maxReportStringLength) {
         console.log(report_source.substring(0, maxReportStringLength) + "...")
@@ -177,8 +168,6 @@ export const detectRisk = (code: any, moduleName: string, fileDir: string) => {
       }
     }
   })
-  // console.log("==================")
-
   // walk.full(ast, node => {
   //   console.log(node)
   // })

@@ -47,7 +47,7 @@ export const scanPhishingPackage = async (owner: string, repoName: string,) => {
   const repoPath = `https://github.com/${owner}/${repoName}`;
   await git.clone({ fs, http, dir, url: repoPath });
   const packagePath = `${dir}/package.json`;
-  console.log(chalk.bgGreenBright("Phishing package detection:"))
+  console.log(chalk.bgGreenBright("Phishing Package Detection:"))
   if (fs.existsSync(packagePath)) {
     const data = fs.readFileSync(packagePath, 'utf8')
     const obj = JSON.parse(data);

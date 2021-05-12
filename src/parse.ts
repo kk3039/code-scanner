@@ -8,7 +8,7 @@ export const parseLocalFile = (filename: string) => {
   const parseTree = parse(file, {
     ecmaVersion: "latest",
   });
-  console.log(parseTree);
+  // console.log(parseTree);
   return parseTree
 };
 
@@ -30,12 +30,12 @@ export const parseGithubFile = (owner: string, repo: string, path: string) => {
             return r.type == "file" && (ext == "js" || ext == "ts");
           })
           .forEach((r) => {
-            console.log(`********** ${r.name} *********`);
-            const parseTree = parse(r.content, {
-              ecmaVersion: "latest",
-            });
-            console.log(parseTree);
-            console.log("*******************");
+            // console.log(`********** ${r.name} *********`);
+            // const parseTree = parse(r.content, {
+            //   ecmaVersion: "latest",
+            // });
+            // console.log(parseTree);
+            // console.log("*******************");
           });
       } else {
         const parseTree = parse(filesArray.content, {

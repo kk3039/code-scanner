@@ -9,7 +9,7 @@ const PROPERTY = 'Property'
 const SPREAD_ELEMENT = 'SpreadElement'
 const RETURN_STMT = 'ReturnStatement'
 
-const print = console.log
+// const print = console.log
 
 export function markEncodedString(ast: any) {
 
